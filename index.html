@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>养成小男友</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: #1a1a1a;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #333;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* 游戏容器：16:9，居中，等比缩放 */
+  #game {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(100vw, calc(100vh * 16 / 9));
+    aspect-ratio: 16 / 9;
+    background: #fff;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+    overflow: hidden;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* 顶部 HUD */
+  #hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 8%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.75));
+    border-bottom: 2px solid rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    padding: 0 1.2%;
+    gap: 1.2%;
+    z-index: 30;
+    backdrop-filter: blur(6px);
+  }
+  .clock {
+    font-size: 1.05vw;
+    font-weight: 600;
+    color: #4a3a2a;
+    background: rgba(255,240,220,0.7);
+    border: 1.5px solid #d9c7a3;
+    border-radius: 6px;
+    padding: 0.4vw 0.8vw;
+    min-width: 9vw;
+    text-align: center;
+    letter-spacing: 0.05em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stats { display: flex; gap: 1.2%; flex: 1; }
+  .stat {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5vw;
+    min-width: 0;
+  }
+  .stat-icon {
+    width: 2.6vw;
+    height: 2.6vw;
+    flex-shrink: 0;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+  }
+  /* 像素风进度条：分段块状 */
+  .bar {
+    flex: 1;
+    height: 1.5vw;
+    background:
+      repeating-linear-gradient(90deg,
+        rgba(0,0,0,0.15) 0 2px,
+        transparent 2px 10%);
+    background-color: rgba(0,0,0,0.12);
+    border: 2px solid #3a2a1a;
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 2px 0 rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.6);
+    image-rendering: pixelated;
+  }
+  .bar-fill {
+    height: 100%;
+    width: 50%;
+    transition: width 0.35s cubic-bezier(.5,.1,.5,1);
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25), inset 0 2px 0 rgba(255,255,255,0.35);
+    background-image: repeating-linear-gradient(90deg,
+      rgba(255,255,255,0.15) 0 2px,
+      transparent 2px 8px);
+  }
+  .stat--love    .bar-fill { background-color: #ff5a95; }
+  .stat--passion .bar-fill { background-color: #ff6b3b; }
+  .stat--understanding .bar-fill { background-color: #f2c94c; }
+  .stat--stress  .bar-fill { background-color: #6d5fd6; }
+  .stat--love    .stat-icon { background-image: url('assets/icon_love.png'); }
+  .stat--passion .stat-icon { background-image: url('assets/icon_passion.png'); }
+  .stat--understanding .stat-icon { background-image: url('assets/icon_understanding.png'); }
+  .stat--stress  .stat-icon { background-image: url('assets/icon_stress.png'); }
+
+  /* 场景舞台 */
+  #stage {
+    position: absolute;
+    top: 8%; left: 0; right: 0; bottom: 0;
+  }
+  .scene {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .scene.active { display: block; }
+
+  /* 场景切换箭头 */
+  .nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6%;
+    aspect-ratio: 1 / 1;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid rgba(255,255,255,0.7);
+    color: #fff;
+    font-size: 2.4vw;
+    font-weight: bold;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .nav-arrow:hover { background: rgba(0,0,0,0.55); }
+  .nav-arrow:active { transform: scale(0.95); }
+  .nav-arrow.left  { left: 1.2%;  top: 50%; transform: translateY(-50%); }
+  .nav-arrow.right { right: 1.2%; top: 50%; transform: translateY(-50%); }
+  .nav-arrow.right-top    { right: 1.2%; top: 32%; }
+  .nav-arrow.right-bottom { right: 1.2%; top: 68%; }
+  .nav-arrow.up    { left: 8%;    top: 12%; }
+  .nav-arrow.down  { left: 3%;    bottom: 8%; }
+  .nav-arrow.left:hover  { transform: translateY(-50%) scale(1.08); }
+  .nav-arrow.right:hover { transform: translateY(-50%) scale(1.08); }
+  .nav-arrow.right-top:hover,
+  .nav-arrow.right-bottom:hover,
+  .nav-arrow.up:hover,
+  .nav-arrow.down:hover  { transform: scale(1.08); }
+  .nav-arrow .label {
+    position: absolute;
+    top: 105%; left: 50%; transform: translateX(-50%);
+    font-size: 0.75vw;
+    color: #fff;
+    background: rgba(0,0,0,0.55);
+    padding: 0.15vw 0.5vw;
+    border-radius: 3px;
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+  }
+  .scene-label {
+    position: absolute;
+    top: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.4);
+    color: #fff;
+    padding: 0.4vw 1.2vw;
+    border-radius: 4px;
+    font-size: 1vw;
+    letter-spacing: 0.1em;
+    z-index: 20;
+  }
+
+  /* 场景内可叠加物件 sprite */
+  .prop {
+    position: absolute;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    pointer-events: none;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.18));
+    z-index: 8;
+  }
+
+  /* 房间灯光暗覆盖层（关灯效果） */
+  .light-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 40%, rgba(20,20,40,0.35), rgba(10,10,25,0.85));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    z-index: 15;
+    mix-blend-mode: multiply;
+  }
+  .scene.dark .light-overlay { opacity: 1; }
+  .scene.dark .prop[data-lamp] { filter: brightness(0.35) drop-shadow(0 4px 6px rgba(0,0,0,0.4)); }
+
+  /* 像素风气泡菜单 */
+  .pixel-menu {
+    position: absolute;
+    background: #fff8ea;
+    border: 3px solid #3a2a1a;
+    border-radius: 2px;
+    padding: 0.6vw 0.4vw;
+    box-shadow:
+      inset 0 0 0 2px #f5e0b0,
+      4px 4px 0 rgba(0,0,0,0.35);
+    z-index: 45;
+    display: none;
+    min-width: 6vw;
+    image-rendering: pixelated;
+    animation: menuPop 0.15s ease-out;
+  }
+  .pixel-menu.show { display: block; }
+  @keyframes menuPop {
+    from { transform: translateY(6px) scale(0.9); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+  }
+  .pixel-menu button {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 0.4vw 0.8vw;
+    font-family: inherit;
+    font-size: 0.95vw;
+    font-weight: 700;
+    color: #3a2a1a;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+  }
+  .pixel-menu button:hover {
+    background: #ffdb8c;
+    color: #6a3010;
+  }
+  .pixel-menu::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid #3a2a1a;
+  }
+
+  /* 男朋友立绘 */
+  .character {
+    position: absolute;
+    bottom: 4%;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 80%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 10;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.25));
+    transition: transform 0.2s;
+  }
+  .character:hover { transform: translateX(-50%) translateY(-4px); }
+
+  /* 可交互热区（叠加在场景上） */
+  .hotspot {
+    position: absolute;
+    cursor: pointer;
+    z-index: 12;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 4px;
+    transition: transform 0.15s;
+  }
+  .hotspot:hover { transform: scale(1.05); }
+  .hotspot::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,180,0.0);
+    border: 2px dashed rgba(255,255,255,0);
+    border-radius: 8px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .hotspot:hover::before {
+    background: rgba(255,255,180,0.18);
+    border-color: rgba(255,255,255,0.7);
+  }
+  .hotspot-label {
+    position: relative;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    font-size: 0.85vw;
+    padding: 0.25vw 0.6vw;
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.15s, transform 0.15s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .hotspot:hover .hotspot-label { opacity: 1; transform: translateY(0); }
+
+  /* 对话气泡 */
+  #dialog {
+    position: absolute;
+    left: 8%; right: 8%; bottom: 5%;
+    background: rgba(255,255,255,0.95);
+    border: 3px solid #4a3a2a;
+    border-radius: 12px;
+    padding: 1.2vw 1.6vw;
+    font-size: 1.1vw;
+    line-height: 1.5;
+    color: #2a2018;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    z-index: 40;
+    display: none;
+    animation: pop 0.25s ease;
+  }
+  #dialog.show { display: block; }
+  #dialog::after {
+    content: "▼";
+    position: absolute;
+    right: 1vw;
+    bottom: 0.6vw;
+    color: #4a3a2a;
+    font-size: 0.9vw;
+    animation: blink 1s infinite;
+  }
+  #dialog .speaker {
+    font-weight: bold;
+    color: #c73e73;
+    margin-bottom: 0.3vw;
+    font-size: 1vw;
+  }
+  @keyframes pop {
+    from { transform: translateY(10px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  @keyframes blink {
+    0%,100% { opacity: 0.3; }
+    50%     { opacity: 1; }
+  }
+
+  /* 浮动数值变化提示 */
+  .float-num {
+    position: absolute;
+    font-size: 1.4vw;
+    font-weight: bold;
+    pointer-events: none;
+    animation: floatUp 1.2s ease-out forwards;
+    z-index: 50;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  }
+  @keyframes floatUp {
+    0%   { opacity: 0; transform: translate(-50%, 0);      }
+    15%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -80px); }
+  }
+
+  /* 调试标注开关 */
+  body.debug .hotspot::before {
+    background: rgba(255,255,180,0.15);
+    border-color: rgba(255,0,0,0.6);
+  }
+  body.debug .hotspot-label { opacity: 1; transform: none; }
+
+  /* BAD END 覆盖屏 */
+  .bad-end {
+    position: absolute;
+    inset: 0;
+    background: #0a0508;
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    animation: fadeInBlack 1.2s ease;
+  }
+  .bad-end.show { display: flex; }
+  @keyframes fadeInBlack {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .bad-end-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2vw 3vw;
+    max-width: 82%;
+  }
+  .bad-end-img {
+    width: 22vw;
+    max-height: 55vh;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 0 20px rgba(255,80,80,0.35));
+    margin-bottom: 1.6vw;
+    animation: shakeFat 3s ease-in-out infinite;
+  }
+  @keyframes shakeFat {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-4px) rotate(-1deg); }
+    75% { transform: translateX(4px) rotate(1deg); }
+  }
+  .bad-end-title {
+    font-size: 5vw;
+    font-weight: 900;
+    color: #ff3355;
+    letter-spacing: 0.4em;
+    text-shadow: 4px 4px 0 #4a0010, 0 0 20px rgba(255,60,80,0.6);
+    margin-bottom: 0.4vw;
+    font-family: "Courier New", monospace;
+  }
+  .bad-end-subtitle {
+    font-size: 1.8vw;
+    color: #ffd8a8;
+    letter-spacing: 0.2em;
+    margin-bottom: 1.6vw;
+  }
+  .bad-end-body {
+    font-size: 1.05vw;
+    color: #ccc;
+    line-height: 1.9;
+    margin-bottom: 2vw;
+  }
+  .bad-end-btn {
+    background: #ffd8a8;
+    color: #4a1a10;
+    border: 3px solid #ff9966;
+    padding: 0.8vw 2vw;
+    font-size: 1.1vw;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    border-radius: 2px;
+    box-shadow: 4px 4px 0 #4a1a10;
+    font-family: inherit;
+  }
+  .bad-end-btn:hover { background: #ffe5c0; transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #4a1a10; }
+  .bad-end-btn:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 #4a1a10; }
+
+  /* 取名开场界面 */
+  .intro-screen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #fff5e6 0%, #fde4c4 100%);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 3vw;
+  }
+  .intro-screen.show { display: flex; }
+  .intro-inner {
+    max-width: 60%;
+    text-align: center;
+    color: #4a3020;
+  }
+  .intro-title {
+    font-size: 2.2vw;
+    font-weight: 900;
+    margin-bottom: 1.6vw;
+    color: #8a4a2a;
+    letter-spacing: 0.15em;
+  }
+  .intro-body {
+    font-size: 1.15vw;
+    line-height: 2;
+    margin-bottom: 1.8vw;
+    color: #5a4030;
+  }
+  .intro-body em {
+    color: #c73e73;
+    font-style: normal;
+    font-weight: 700;
+  }
+  .intro-input {
+    width: 100%;
+    max-width: 320px;
+    font-size: 1.3vw;
+    padding: 0.7vw 1vw;
+    text-align: center;
+    background: #fff;
+    border: 3px solid #8a4a2a;
+    border-radius: 2px;
+    font-family: inherit;
+    color: #4a3020;
+    box-shadow: inset 0 2px 0 rgba(0,0,0,0.05), 4px 4px 0 rgba(0,0,0,0.15);
+    margin-bottom: 1.4vw;
+    letter-spacing: 0.1em;
+  }
+  .intro-input:focus { outline: none; border-color: #c73e73; }
+  .intro-btn {
+    background: #c73e73;
+    color: #fff;
+    border: 3px solid #6a1a3a;
+    padding: 0.8vw 2.4vw;
+    font-size: 1.1vw;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    border-radius: 2px;
+    box-shadow: 4px 4px 0 #4a1020;
+    font-family: inherit;
+  }
+  .intro-btn:hover { background: #d94a80; transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #4a1020; }
+  .intro-btn:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 #4a1020; }
+  .intro-btn:disabled { background: #ccc; border-color: #999; box-shadow: 4px 4px 0 #888; cursor: not-allowed; }
+
+  /* ============ CG 播放器 ============ */
+  .cg-overlay {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    z-index: 250;
+    display: none;
+    flex-direction: column;
+    animation: fadeInBlack 0.6s ease;
+  }
+  .cg-overlay.show { display: flex; }
+  .cg-image-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .cg-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    image-rendering: auto;
+  }
+  .cg-dialog {
+    position: absolute;
+    left: 6%; right: 6%; bottom: 4%;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    padding: 1vw 1.4vw;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 4px;
+    font-size: 1.05vw;
+    line-height: 1.6;
+    letter-spacing: 0.05em;
+    z-index: 3;
+  }
+  .cg-dialog .speaker {
+    font-weight: 700;
+    color: #ffc9a8;
+    margin-bottom: 0.4vw;
+    font-size: 0.95vw;
+    letter-spacing: 0.1em;
+  }
+  .cg-options {
+    position: absolute;
+    left: 8%; right: 8%; bottom: 5%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6vw;
+    z-index: 4;
+  }
+  .cg-option {
+    background: rgba(255,255,255,0.92);
+    color: #2a1810;
+    border: 3px solid #2a1810;
+    padding: 0.7vw 1.2vw;
+    font-family: inherit;
+    font-size: 1vw;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.4);
+  }
+  .cg-option:hover { background: #ffe5c0; transform: translate(-2px,-2px); box-shadow: 5px 5px 0 rgba(0,0,0,0.4); }
+  .cg-option:active { transform: translate(1px,1px); box-shadow: 2px 2px 0 rgba(0,0,0,0.4); }
+  .cg-timer-ring {
+    position: absolute;
+    right: 2vw;
+    top: 2vw;
+    width: 4vw;
+    height: 4vw;
+    z-index: 5;
+  }
+  .cg-timer-ring circle {
+    fill: none;
+    stroke-width: 4;
+  }
+  .cg-timer-ring .track { stroke: rgba(255,255,255,0.2); }
+  .cg-timer-ring .bar {
+    stroke: #ffc9a8;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transition: stroke-dashoffset linear;
+  }
+  .cg-continue-hint {
+    position: absolute;
+    right: 2vw; bottom: 2vw;
+    color: rgba(255,255,255,0.6);
+    font-size: 0.9vw;
+    z-index: 5;
+    animation: blink 1.4s infinite;
+  }
+
+  /* ============ 开发者模式面板 ============ */
+  #dev-toggle {
+    position: absolute;
+    top: 1vw; right: 1vw;
+    width: 2.4vw;
+    height: 2.4vw;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    font-size: 1.3vw;
+    cursor: pointer;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #dev-toggle:hover { background: rgba(0,0,0,0.75); }
+  #dev-panel {
+    position: absolute;
+    top: 0; right: 0;
+    width: 22vw;
+    height: 100%;
+    background: rgba(20,20,20,0.95);
+    color: #fff;
+    padding: 1.2vw 1vw;
+    z-index: 500;
+    overflow-y: auto;
+    display: none;
+    font-family: "SF Mono","Menlo",monospace;
+    font-size: 0.85vw;
+    border-left: 3px solid #ff6b3b;
+  }
+  #dev-panel.show { display: block; }
+  #dev-panel h3 {
+    color: #ff6b3b;
+    font-size: 1vw;
+    letter-spacing: 0.2em;
+    margin-bottom: 0.8vw;
+    padding-bottom: 0.4vw;
+    border-bottom: 1px solid rgba(255,107,59,0.4);
+  }
+  #dev-panel h4 {
+    color: #ffc9a8;
+    font-size: 0.9vw;
+    margin: 1vw 0 0.4vw;
+    letter-spacing: 0.1em;
+  }
+  #dev-panel button {
+    display: block;
+    width: 100%;
+    background: rgba(255,107,59,0.15);
+    color: #fff;
+    border: 1px solid rgba(255,107,59,0.5);
+    padding: 0.4vw 0.6vw;
+    font-family: inherit;
+    font-size: 0.8vw;
+    text-align: left;
+    cursor: pointer;
+    margin-bottom: 0.35vw;
+    border-radius: 2px;
+  }
+  #dev-panel button:hover { background: rgba(255,107,59,0.35); }
+  #dev-panel .row {
+    display: flex;
+    align-items: center;
+    gap: 0.4vw;
+    margin-bottom: 0.4vw;
+  }
+  #dev-panel input[type=range] {
+    flex: 1;
+    accent-color: #ff6b3b;
+  }
+  #dev-panel input[type=number] {
+    width: 3.2vw;
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 0.15vw 0.3vw;
+    font-family: inherit;
+    font-size: 0.75vw;
+  }
+  #dev-panel label {
+    display: inline-block;
+    width: 4vw;
+    color: #ccc;
+    font-size: 0.75vw;
+  }
+  #dev-panel .close-btn {
+    position: absolute;
+    top: 0.6vw; right: 0.6vw;
+    width: 1.6vw; height: 1.6vw;
+    background: transparent;
+    color: #ff6b3b;
+    border: 1px solid #ff6b3b;
+    text-align: center;
+    padding: 0;
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <!-- 顶部 HUD -->
+  <div id="hud">
+    <div class="clock" id="clock">--:--</div>
+    <div class="stats">
+      <div class="stat stat--love">
+        <div class="stat-icon"></div>
+        <div class="bar"><div class="bar-fill" id="bar-love"></div></div>
+      </div>
+      <div class="stat stat--passion">
+        <div class="stat-icon"></div>
+        <div class="bar"><div class="bar-fill" id="bar-passion"></div></div>
+      </div>
+      <div class="stat stat--understanding">
+        <div class="stat-icon"></div>
+        <div class="bar"><div class="bar-fill" id="bar-understanding"></div></div>
+      </div>
+      <div class="stat stat--stress">
+        <div class="stat-icon"></div>
+        <div class="bar"><div class="bar-fill" id="bar-stress"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 场景舞台 -->
+  <div id="stage">
+    <!-- 客厅场景（起点） -->
+    <div class="scene active" id="scene-living" data-name="客厅">
+      <div class="scene-label">客厅</div>
+      <!-- 吊灯 sprite -->
+      <img class="prop" data-lamp src="assets/pendant_lamp.png" alt=""
+           style="left:40%; top:2%; width:20%;" />
+      <!-- 吊灯热区 -->
+      <div class="hotspot" data-action="lamp"
+           style="left:45%; top:14%; width:12%; height:14%;">
+        <span class="hotspot-label">💡 吊灯</span>
+      </div>
+      <!-- 电脑桌 sprite（站姿时显示） -->
+      <img class="prop" id="prop-computer" src="assets/computer_desk.png" alt=""
+           style="left:5%; bottom:6%; width:28%;" />
+      <!-- 男主坐姿（工作时显示，默认隐藏） -->
+      <img class="prop" id="prop-hero-working" src="assets/characters/hero_computer.png" alt=""
+           style="left:5%; bottom:6%; width:32%; display:none; z-index:11;" />
+      <!-- 沙发 sprite -->
+      <img class="prop" src="assets/sofa.png" alt=""
+           style="right:3%; bottom:6%; width:32%;" />
+      <!-- 沙发上方壁挂柜（含薯片） -->
+      <img class="prop" src="assets/shelf.png" alt=""
+           style="right:6%; top:28%; width:26%;" />
+      <!-- 薯片热区（柜子里的薯片袋） -->
+      <div class="hotspot" data-action="chip"
+           style="right:15%; top:33%; width:6%; height:9%;">
+        <span class="hotspot-label">🍟 薯片</span>
+      </div>
+      <!-- 电脑桌 热区 -->
+      <div class="hotspot" data-action="computer"
+           style="left:6%; top:52%; width:26%; height:38%;">
+        <span class="hotspot-label">💻 电脑</span>
+      </div>
+      <!-- 沙发热区 -->
+      <div class="hotspot" data-action="sofa"
+           style="right:3%; top:52%; width:30%; height:38%;">
+        <span class="hotspot-label">🛋 沙发</span>
+      </div>
+      <img class="character" id="hero-living"
+           src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
+           style="left: 50%; height: 62%;" />
+      <!-- 上楼去卧室 -->
+      <div class="nav-arrow up" data-nav="bedroom">▲<span class="label">卧室</span></div>
+      <!-- 右上：外出 -->
+      <div class="nav-arrow right-top" data-action="goOut">▶<span class="label">外出</span></div>
+      <!-- 右下：厕所 -->
+      <div class="nav-arrow right-bottom" data-nav="bathroom">▶<span class="label">厕所</span></div>
+      <!-- 关灯覆盖层 -->
+      <div class="light-overlay"></div>
+    </div>
+
+    <!-- 厕所场景 -->
+    <div class="scene" id="scene-bathroom" data-name="厕所">
+      <div class="scene-label">厕所</div>
+      <!-- 马桶 sprite -->
+      <img class="prop" src="assets/toilet.png" alt=""
+           style="left:6%; bottom:8%; width:22%;" />
+      <!-- 水槽梳妆台 sprite -->
+      <img class="prop" src="assets/sink.png" alt=""
+           style="left:36%; bottom:6%; width:28%;" />
+      <!-- 淋浴间 sprite -->
+      <img class="prop" src="assets/shower.png" alt=""
+           style="right:4%; bottom:6%; width:28%;" />
+      <!-- 马桶热区 -->
+      <div class="hotspot" data-action="toilet"
+           style="left:7%; top:56%; width:20%; height:36%;">
+        <span class="hotspot-label">🚽 马桶</span>
+      </div>
+      <!-- 水槽热区 -->
+      <div class="hotspot" data-action="sink"
+           style="left:37%; top:36%; width:26%; height:58%;">
+        <span class="hotspot-label">🪞 水槽</span>
+      </div>
+      <!-- 淋浴热区 -->
+      <div class="hotspot" data-action="shower"
+           style="right:5%; top:24%; width:26%; height:70%;">
+        <span class="hotspot-label">🚿 淋浴</span>
+      </div>
+      <img class="character" id="hero-bathroom"
+           src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
+           style="left: 78%; height: 52%; bottom: 6%;" />
+      <!-- 返回客厅 -->
+      <div class="nav-arrow left" data-nav="living">◀<span class="label">客厅</span></div>
+    </div>
+
+    <!-- 卧室场景（夹层） -->
+    <div class="scene" id="scene-bedroom" data-name="卧室">
+      <div class="scene-label">卧室</div>
+      <!-- 大床 -->
+      <div class="hotspot" data-action="bed"
+           style="left:28%; top:66%; width:44%; height:26%;">
+        <span class="hotspot-label">🛏 床</span>
+      </div>
+      <!-- 兔子玩偶 -->
+      <div class="hotspot" data-action="bunny"
+           style="left:41%; top:52%; width:6%; height:12%;">
+        <span class="hotspot-label">🐰 兔兔</span>
+      </div>
+      <!-- 企鹅玩偶 -->
+      <div class="hotspot" data-action="penguin"
+           style="left:48%; top:52%; width:6%; height:12%;">
+        <span class="hotspot-label">🐧 企鹅</span>
+      </div>
+      <img class="character" id="hero-bedroom"
+           src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
+           style="left: 80%; height: 62%;" />
+      <!-- 下楼回客厅 -->
+      <div class="nav-arrow down" data-nav="living">▼<span class="label">下楼</span></div>
+    </div>
+  </div>
+
+  <!-- 对话气泡 -->
+  <div id="dialog"><div class="speaker" id="dialog-speaker"></div><div id="dialog-text"></div></div>
+
+  <!-- 像素风气泡菜单（供各种交互复用） -->
+  <div class="pixel-menu" id="pixel-menu"></div>
+
+  <!-- 开场取名界面 -->
+  <div id="intro-screen" class="intro-screen">
+    <div class="intro-inner">
+      <div class="intro-title">🏠 我们的新家</div>
+      <div class="intro-body">
+        今天，你和男朋友一起搬进了新家。<br>
+        阳光透过落地窗洒进客厅，纸箱堆在墙角，还没来得及拆。<br>
+        他把最后一个箱子放下，转过头冲你笑了笑：<br>
+        "以后，就是<em>我们的家</em>了。"<br><br>
+        —— 你要给他取一个什么名字呢？
+      </div>
+      <input class="intro-input" id="intro-name-input" maxlength="8"
+             placeholder="给他取个名字..." autocomplete="off" />
+      <br>
+      <button class="intro-btn" id="intro-start-btn" onclick="submitHeroName()">开 始</button>
+    </div>
+  </div>
+
+  <!-- CG 播放器 -->
+  <div id="cg-overlay" class="cg-overlay">
+    <div class="cg-image-wrap">
+      <img class="cg-image" id="cg-image" src="" alt="" />
+      <svg class="cg-timer-ring" id="cg-timer" viewBox="0 0 40 40" style="display:none;">
+        <circle class="track" cx="20" cy="20" r="17"></circle>
+        <circle class="bar"   cx="20" cy="20" r="17"
+                stroke-dasharray="106.8" stroke-dashoffset="0"></circle>
+      </svg>
+    </div>
+    <div class="cg-dialog" id="cg-dialog" style="display:none;">
+      <div class="speaker" id="cg-speaker"></div>
+      <div id="cg-text"></div>
+    </div>
+    <div class="cg-options" id="cg-options" style="display:none;"></div>
+    <div class="cg-continue-hint" id="cg-continue-hint" style="display:none;">▶ 点击继续</div>
+  </div>
+
+  <!-- 开发者模式按钮 -->
+  <button id="dev-toggle" title="开发者模式 (~)" onclick="toggleDevPanel()">⚙</button>
+
+  <!-- 开发者面板 -->
+  <div id="dev-panel">
+    <button class="close-btn" onclick="toggleDevPanel()">×</button>
+    <h3>⚙️ DEV MODE</h3>
+
+    <h4>剧情触发</h4>
+    <button onclick="dev_triggerWalk()">▶ 散步剧情（含牵手）</button>
+    <button onclick="dev_triggerArgue()">▶ 争吵剧情</button>
+    <button onclick="dev_triggerKiss()">▶ 和好接吻</button>
+    <button onclick="dev_triggerBadEnd()">💀 薯片 Bad End</button>
+
+    <h4>数值直改</h4>
+    <div class="row"><label>心动</label><input type="range" min="0" max="100" data-stat="love"><input type="number" min="0" max="100" data-stat="love"></div>
+    <div class="row"><label>激情</label><input type="range" min="0" max="100" data-stat="passion"><input type="number" min="0" max="100" data-stat="passion"></div>
+    <div class="row"><label>了解</label><input type="range" min="0" max="100" data-stat="understanding"><input type="number" min="0" max="100" data-stat="understanding"></div>
+    <div class="row"><label>压力</label><input type="range" min="0" max="100" data-stat="stress"><input type="number" min="0" max="100" data-stat="stress"></div>
+
+    <h4>时间/计数</h4>
+    <button onclick="advanceTime(6)">⏩ +6 小时</button>
+    <button onclick="advanceTime(24)">⏩ +1 天</button>
+    <button onclick="dev_setDay(8)">⏩ 跳到第 8 天（第 2 周）</button>
+    <button onclick="state.outCount=(state.outCount||0)+1; saveState(); alert('外出次数: '+state.outCount);">外出次数 +1</button>
+    <button onclick="state.chipCount=(state.chipCount||0)+1; applyHeroScale(); saveState(); alert('薯片次数: '+state.chipCount);">薯片次数 +1</button>
+
+    <h4>其他</h4>
+    <button onclick="document.body.classList.toggle('debug')">🔲 显示热区</button>
+    <button onclick="if(confirm('重置存档？'))resetGame()">🗑 重置存档</button>
+  </div>
+
+  <!-- BAD END 覆盖屏 -->
+  <div id="bad-end" class="bad-end">
+    <div class="bad-end-inner">
+      <div class="bad-end-title">BAD END</div>
+      <div class="bad-end-subtitle">肥肥的男孩子没人爱</div>
+      <div class="bad-end-body">
+        自从他离不开你手里的薯片袋，他也就再也离不开沙发了。<br>
+        据说你们分手那天他哭着吃了三包，然后打开了外卖 App。
+      </div>
+      <button class="bad-end-btn" onclick="resetGame()">重新开始</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ 游戏状态 ============
+const DEFAULT_STATE = {
+  stats: { love: 20, passion: 10, understanding: 20, stress: 15 },
+  scene: 'living',
+  lightsOn: true,
+  atComputer: false,
+  chipCount: 0,
+  outCount: 0,
+  walkDone: false,
+  argueDone: false,
+  kissDone: false,
+  badEnd: false,
+  heroName: '',
+  gameTime: 8 * 60,   // 分钟数，起始为第1天 08:00
+  lastTick: Date.now(),
+};
+const STAT_MAX = 100;
+const STAT_MIN = 0;
+const SAVE_KEY = 'bf-sim-save-v1';
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return structuredClone(DEFAULT_STATE);
+    return { ...structuredClone(DEFAULT_STATE), ...JSON.parse(raw) };
+  } catch { return structuredClone(DEFAULT_STATE); }
+}
+function saveState() {
+  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+}
+
+// ============ 数值系统 ============
+function changeStat(key, delta) {
+  const before = state.stats[key];
+  state.stats[key] = Math.max(STAT_MIN, Math.min(STAT_MAX, before + delta));
+  const real = state.stats[key] - before;
+  renderStats();
+  if (real !== 0) floatNumber(key, real);
+  saveState();
+}
+
+function renderStats() {
+  for (const k of ['love','passion','understanding','stress']) {
+    const v = state.stats[k];
+    document.getElementById(`bar-${k}`).style.width = v + '%';
+  }
+}
+
+function floatNumber(statKey, delta) {
+  const anchor = document.getElementById(`bar-${statKey}`).getBoundingClientRect();
+  const game = document.getElementById('game').getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'float-num';
+  const color = { love:'#ff5a95', passion:'#ff6b3b', understanding:'#f2c94c', stress:'#6d5fd6' }[statKey];
+  el.style.color = color;
+  el.textContent = (delta > 0 ? '+' : '') + Math.round(delta);
+  el.style.left = ((anchor.left + anchor.width/2 - game.left) / game.width * 100) + '%';
+  el.style.top  = ((anchor.bottom - game.top) / game.height * 100 + 1) + '%';
+  document.getElementById('game').appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
+// ============ 时钟系统（行动步数驱动） ============
+const HOURS_PER_ACTION = 3;
+function renderClock() {
+  const t = state.gameTime | 0;
+  const day = Math.floor(t / (24*60)) + 1;
+  const mins = t % (24*60);
+  const h = String(Math.floor(mins / 60)).padStart(2,'0');
+  const m = String(mins % 60).padStart(2,'0');
+  document.getElementById('clock').textContent = `第${day}天 ${h}:${m}`;
+}
+// 每次行动推进 N 小时；到 24:00 触发睡觉
+function advanceTime(hours = HOURS_PER_ACTION) {
+  state.gameTime = (state.gameTime | 0) + hours * 60;
+  renderClock();
+  // 是否跨过午夜 24:00 → 触发睡觉
+  const dayMins = state.gameTime % (24*60);
+  if (dayMins >= 22*60 || dayMins < 6*60) {
+    // 22:00 之后或 06:00 之前 → 认为该睡觉
+    // 只在跨过晚间时触发一次
+    if (!state.sleepPrompted) {
+      state.sleepPrompted = true;
+      setTimeout(() => triggerBedtime(), 800);
+    }
+  } else {
+    state.sleepPrompted = false;
+  }
+  saveState();
+}
+function triggerBedtime() {
+  showDialog('@bf', '有点困了……我们上去睡吧？');
+  setTimeout(() => {
+    // 推进到次日 07:00
+    const t = state.gameTime;
+    const nextDay = Math.floor(t / (24*60)) + 1;
+    state.gameTime = nextDay * 24 * 60 + 7 * 60;
+    state.sleepPrompted = false;
+    changeStat('stress', -10);
+    changeStat('understanding', +2);
+    renderClock();
+    saveState();
+    showDialog('系统', `——第 ${nextDay + 1} 天 07:00——`);
+  }, 3200);
+}
+
+// ============ 气泡菜单 ============
+function showMenu(anchorEl, items) {
+  const menu = document.getElementById('pixel-menu');
+  menu.innerHTML = '';
+  items.forEach(it => {
+    const b = document.createElement('button');
+    b.textContent = it.label;
+    b.onclick = (e) => { e.stopPropagation(); hideMenu(); it.onClick(); };
+    menu.appendChild(b);
+  });
+  const gameRect = document.getElementById('game').getBoundingClientRect();
+  const anchor = anchorEl.getBoundingClientRect();
+  menu.classList.add('show');
+  // 定位到锚点上方居中
+  requestAnimationFrame(() => {
+    const mRect = menu.getBoundingClientRect();
+    const left = anchor.left + anchor.width/2 - mRect.width/2 - gameRect.left;
+    const top  = anchor.top - mRect.height - 12 - gameRect.top;
+    menu.style.left = Math.max(4, left) + 'px';
+    menu.style.top  = Math.max(4, top) + 'px';
+  });
+}
+function hideMenu() {
+  document.getElementById('pixel-menu').classList.remove('show');
+}
+// 点空白关菜单（点热区/菜单本身不关，避免开菜单同帧被关掉）
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#pixel-menu') && !e.target.closest('[data-action]')) {
+    hideMenu();
+  }
+}, true);
+
+// ============ 灯光 & 电脑姿势 ============
+function applyLights() {
+  document.getElementById('scene-living').classList.toggle('dark', !state.lightsOn);
+}
+function applyComputerPose() {
+  const seated = state.scene === 'living' && state.atComputer;
+  document.getElementById('prop-hero-working').style.display = seated ? 'block' : 'none';
+  document.getElementById('prop-computer').style.display    = seated ? 'none'  : 'block';
+  document.getElementById('hero-living').style.display      = seated ? 'none'  : 'block';
+}
+
+// ============ 男主体型缩放（薯片喂食）============
+function applyHeroScale() {
+  const n = state.chipCount || 0;
+  // 10 次总共放大到 ~1.6x，刚好撑满场景高度
+  const scale = Math.min(Math.pow(1.05, n), 1.65);
+  document.querySelectorAll('.character').forEach(el => {
+    el.style.transform = `translateX(-50%) scale(${scale})`;
+    el.style.transformOrigin = 'bottom center';
+  });
+}
+
+// ============ BAD END ============
+function triggerBadEnd() {
+  state.badEnd = true;
+  saveState();
+  document.getElementById('bad-end').classList.add('show');
+}
+function resetGame() {
+  localStorage.removeItem(SAVE_KEY);
+  location.reload();
+}
+
+// ============ 取名 ============
+function showIntro() {
+  document.getElementById('intro-screen').classList.add('show');
+  const input = document.getElementById('intro-name-input');
+  setTimeout(() => input.focus(), 200);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitHeroName();
+  });
+}
+function submitHeroName() {
+  const input = document.getElementById('intro-name-input');
+  const name = (input.value || '').trim();
+  if (!name) { input.focus(); return; }
+  state.heroName = name;
+  saveState();
+  document.getElementById('intro-screen').classList.remove('show');
+  // 欢迎语用新名字
+  setTimeout(() => showDialog(state.heroName, '……那你要好好爱我哦。'), 500);
+}
+
+// ============ 场景切换 ============
+function switchScene(name) {
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(`scene-${name}`);
+  if (target) {
+    target.classList.add('active');
+    state.scene = name;
+    // 离开客厅时，坐姿复位
+    if (name !== 'living') state.atComputer = false;
+    applyComputerPose();
+    saveState();
+  }
+}
+
+// ============ 对话系统 ============
+let dialogTimer = null;
+function bfName() { return state.heroName || '男朋友'; }
+function showDialog(speaker, text, duration = 3500) {
+  // 允许用 '@bf' 作为占位符自动替换为男主名字
+  if (speaker === '@bf') speaker = bfName();
+  clearTimeout(dialogTimer);
+  document.getElementById('dialog-speaker').textContent = speaker;
+  document.getElementById('dialog-text').textContent = text;
+  document.getElementById('dialog').classList.add('show');
+  dialogTimer = setTimeout(hideDialog, duration);
+}
+function hideDialog() {
+  document.getElementById('dialog').classList.remove('show');
+}
+document.getElementById('dialog').addEventListener('click', hideDialog);
+
+// ============ 互动逻辑（占位版） ============
+const HERO_LINES_IDLE = [
+  '你回来啦～今天想做什么？',
+  '（悄悄看你）……在忙吗？',
+  '有点想抱抱你。',
+  '我今天很乖哦。',
+  '陪陪我嘛？',
+];
+function pickLine(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+const INTERACTIONS = {
+  hero: () => {
+    showDialog('@bf', pickLine(HERO_LINES_IDLE));
+    changeStat('love', +2);
+  },
+  computer: (evt) => {
+    const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="computer"]');
+    if (state.atComputer) {
+      // 已经坐着 → 点一下起来
+      state.atComputer = false;
+      applyComputerPose();
+      showDialog('@bf', '嗯，先歇会儿。');
+      changeStat('stress', -2);
+      saveState();
+      return;
+    }
+    showMenu(anchor, [
+      {
+        label: '🎮 玩游戏',
+        onClick: () => {
+          state.atComputer = true;
+          applyComputerPose();
+          showDialog('@bf', '打把游戏！你在旁边给我加油嘛～');
+          changeStat('love', +2);
+          changeStat('passion', +3);
+          changeStat('stress', -4);
+          changeStat('understanding', +1);
+          saveState();
+          advanceTime();
+        }
+      },
+      {
+        label: '🎬 看剧',
+        onClick: () => {
+          state.atComputer = true;
+          applyComputerPose();
+          showDialog('@bf', '一起窝着看部剧吧～');
+          changeStat('love', +3);
+          changeStat('stress', -5);
+          changeStat('understanding', +2);
+          saveState();
+          advanceTime();
+        }
+      },
+      {
+        label: '💼 工作',
+        onClick: () => {
+          state.atComputer = true;
+          applyComputerPose();
+          showDialog('@bf', '我先赶个 deadline……你陪陪我。');
+          changeStat('stress', +6);
+          changeStat('understanding', +1);
+          changeStat('love', +1);
+          saveState();
+          advanceTime();
+        }
+      },
+    ]);
+  },
+  lamp: (evt) => {
+    const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="lamp"]');
+    showMenu(anchor, [
+      {
+        label: state.lightsOn ? '关灯' : '开灯',
+        onClick: () => {
+          state.lightsOn = !state.lightsOn;
+          applyLights();
+          saveState();
+        }
+      }
+    ]);
+  },
+  sofa: () => {
+    showDialog('@bf', '过来陪我坐一会儿嘛～');
+    changeStat('love', +3);
+    changeStat('stress', -3);
+  },
+  bed: () => {
+    showDialog('系统', '要休息一下吗？（占位）');
+    changeStat('understanding', +2);
+    changeStat('stress', -5);
+  },
+  bunny: () => {
+    showDialog('@bf', '这是兔兔，你上次送我的。我一直放床头哦。');
+    changeStat('love', +3);
+  },
+  penguin: () => {
+    showDialog('@bf', '企鹅今天也在乖乖看家～');
+    changeStat('love', +2);
+    changeStat('stress', -2);
+  },
+  leftExit: () => { /* deprecated, kept for legacy */ },
+  goOut: () => {
+    state.outCount = (state.outCount || 0) + 1;
+    // 满 3 次且未播过散步剧情：触发散步
+    if (state.outCount >= 3 && !state.walkDone) {
+      setTimeout(triggerWalkStory, 300);
+      return;
+    }
+    showDialog('@bf', '出去走走？我陪你～');
+    changeStat('stress', -5);
+    changeStat('love', +2);
+    changeStat('understanding', +1);
+    saveState();
+  },
+  toilet: () => {
+    showDialog('@bf', '……你别看啦！');
+    changeStat('love', -1);
+  },
+  sink: () => {
+    showDialog('@bf', '洗把脸清醒一下～');
+    changeStat('stress', -3);
+  },
+  shower: () => {
+    showDialog('@bf', '要一起洗吗？（脸红）');
+    changeStat('love', +4);
+    changeStat('passion', +5);
+    changeStat('stress', -3);
+  },
+  chip: () => {
+    state.chipCount = (state.chipCount || 0) + 1;
+    changeStat('love', +3);
+    changeStat('stress', -2);
+    applyHeroScale();
+    const remain = 10 - state.chipCount;
+    if (state.chipCount >= 10) {
+      showDialog('@bf', '呜……我，我好像……动不了了……');
+      saveState();
+      setTimeout(triggerBadEnd, 1200);
+    } else {
+      const lines = [
+        '好吃！再来一片～',
+        '嗯……你喂我的最香。',
+        '我可以一直吃……',
+        '你不吃？那都给我～',
+        '嗝……',
+        '好幸福……',
+        '还有吗？',
+        '我今天不想动了……',
+        '再来最后一片……真的最后一片……',
+      ];
+      showDialog('@bf', lines[Math.min(state.chipCount-1, lines.length-1)]);
+      saveState();
+    }
+  },
+};
+
+// ============ 事件绑定 ============
+// 哪些 action 不推进时间（弹菜单/切换姿势本身）
+const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer']);
+// 哪些菜单选项点击后需要推进（在菜单内单独调用 advanceTime）
+
+document.addEventListener('click', (e) => {
+  const nav = e.target.closest('[data-nav]');
+  if (nav) { switchScene(nav.dataset.nav); return; }
+  const spot = e.target.closest('[data-action]');
+  if (spot) {
+    const action = spot.dataset.action;
+    const fn = INTERACTIONS[action];
+    if (fn) fn({ currentTarget: spot });
+    // 触发即消耗时间（除少数不消耗的）
+    if (!NO_TIME_ACTIONS.has(action)) advanceTime();
+  }
+});
+
+// 调试快捷键：按 D 显示热区
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'd' || e.key === 'D') document.body.classList.toggle('debug');
+  if (e.key === 'r' || e.key === 'R') {
+    if (confirm('重置存档？')) {
+      localStorage.removeItem(SAVE_KEY);
+      location.reload();
+    }
+  }
+});
+
+// ============ CG 播放系统 ============
+let cgClickResolver = null;
+let cgTimerHandle = null;
+
+function cgShow(imgPath) {
+  const overlay = document.getElementById('cg-overlay');
+  document.getElementById('cg-image').src = imgPath;
+  overlay.classList.add('show');
+}
+function cgHide() {
+  document.getElementById('cg-overlay').classList.remove('show');
+  document.getElementById('cg-dialog').style.display = 'none';
+  document.getElementById('cg-options').style.display = 'none';
+  document.getElementById('cg-continue-hint').style.display = 'none';
+  document.getElementById('cg-timer').style.display = 'none';
+}
+
+// 显示一段旁白/对话，返回 Promise，等玩家点击继续
+function cgSay(speaker, text) {
+  return new Promise(resolve => {
+    const dlg = document.getElementById('cg-dialog');
+    document.getElementById('cg-speaker').textContent = speaker === '@bf' ? bfName() : speaker;
+    document.getElementById('cg-text').textContent = text;
+    dlg.style.display = 'block';
+    document.getElementById('cg-continue-hint').style.display = 'block';
+    document.getElementById('cg-options').style.display = 'none';
+    // 单次点击继续
+    const overlay = document.getElementById('cg-overlay');
+    const handler = (e) => {
+      if (e.target.closest('.cg-option') || e.target.closest('.cg-timer-ring')) return;
+      overlay.removeEventListener('click', handler);
+      document.getElementById('cg-continue-hint').style.display = 'none';
+      resolve();
+    };
+    overlay.addEventListener('click', handler);
+  });
+}
+
+// 显示选项 + 计时；timeoutMs 后自动 resolve(null)
+function cgChoose(options, timeoutMs = 4000) {
+  return new Promise(resolve => {
+    const box = document.getElementById('cg-options');
+    box.innerHTML = '';
+    box.style.display = 'flex';
+    document.getElementById('cg-dialog').style.display = 'none';
+    document.getElementById('cg-continue-hint').style.display = 'none';
+
+    let done = false;
+    const finish = (val) => {
+      if (done) return; done = true;
+      clearTimeout(cgTimerHandle);
+      const ring = document.getElementById('cg-timer');
+      ring.style.display = 'none';
+      box.style.display = 'none';
+      resolve(val);
+    };
+    options.forEach((opt, i) => {
+      const b = document.createElement('button');
+      b.className = 'cg-option';
+      b.textContent = opt;
+      b.onclick = () => finish(i);
+      box.appendChild(b);
+    });
+    // 计时环
+    if (timeoutMs > 0) {
+      const ring = document.getElementById('cg-timer');
+      const bar = ring.querySelector('.bar');
+      ring.style.display = 'block';
+      bar.style.transition = 'none';
+      bar.style.strokeDashoffset = '0';
+      // 强制 reflow 后再启动 transition
+      void bar.offsetWidth;
+      bar.style.transition = `stroke-dashoffset ${timeoutMs}ms linear`;
+      bar.style.strokeDashoffset = '106.8';  // 圆周长
+      cgTimerHandle = setTimeout(() => finish(null), timeoutMs);
+    }
+  });
+}
+
+// ============ 散步剧情 ============
+async function triggerWalkStory() {
+  cgShow('assets/cg_walk.png');
+  await cgSay('旁白', '今晚，你们决定一起出去走走。');
+  await cgSay('旁白', '路灯昏黄，风很温柔。他走在你身边，什么话也没说。');
+  await cgSay('@bf', '（他偷偷看了你一眼，又把视线移回脚下……）');
+
+  const pick = await cgChoose([
+    '主动牵他的手',
+    '悄悄靠近他一点',
+    '轻声说："想你了。"',
+    '……（什么都不做）',
+  ], 4000);
+
+  // 切换到牵手 CG
+  cgShow('assets/cg_walk_hold.png');
+  await new Promise(r => setTimeout(r, 400));
+
+  if (pick === 0) {
+    await cgSay('@bf', '……嗯，握紧一点。');
+    await cgSay('@bf', '你的手，比风还软。');
+    changeStat('love', +15);
+    changeStat('passion', +8);
+  } else if (pick === 1) {
+    await cgSay('@bf', '（他愣了一下，然后自己把你的手牵起来了。）');
+    await cgSay('@bf', '离我近一点，才不会走丢。');
+    changeStat('love', +12);
+    changeStat('passion', +5);
+  } else if (pick === 2) {
+    await cgSay('@bf', '（他握住你的手，耳朵一下子红了。）');
+    await cgSay('@bf', '……我也是。一直都是。');
+    changeStat('love', +18);
+    changeStat('understanding', +5);
+  } else {
+    // 什么都不做 → 男主自己伸手
+    await cgSay('旁白', '你看着地上的影子，安静地走着。');
+    await cgSay('@bf', '（他鼓起勇气，慢慢地把手伸过来，握住了你。）');
+    await cgSay('@bf', '……你要是不说，那我就主动了。');
+    await cgSay('@bf', '以后走夜路，都让我牵你，好不好？');
+    changeStat('love', +20);
+    changeStat('passion', +10);
+    changeStat('understanding', +3);
+  }
+
+  await new Promise(r => setTimeout(r, 600));
+  state.walkDone = true;
+  saveState();
+  cgHide();
+}
+
+// ============ 争吵剧情 ============
+async function triggerArgueStory() {
+  cgShow('assets/cg_argue.png');
+  await cgSay('旁白', '同居的时候总是有矛盾，争吵的次数也一次比一次更多……');
+  await cgSay('旁白', '今晚也是。你们又因为一件小事吵了起来。');
+  await cgSay('@bf', '（他侧过头，皱着眉，一句话也不说。）');
+
+  const s = state.stats;
+  const canKiss = s.love >= 60 && s.understanding >= 60;
+
+  if (canKiss) {
+    await cgSay('旁白', '你看着他鼓起来的脸颊，突然就笑了。');
+    await cgSay('旁白', '……算了。是我不好。');
+    await new Promise(r => setTimeout(r, 400));
+    // 接吻 CG（暂用同一张争吵CG占位；后续可换成 cg_kiss.png）
+    await triggerKissStory({fromArgue: true});
+  } else {
+    await cgSay('@bf', '……算了吧。');
+    if (s.understanding >= 40) {
+      await cgSay('@bf', '我今天在公司也很累。我不想再吵了。');
+      await cgSay('@bf', '……你能让我一个人待会儿吗。');
+      changeStat('love', -8);
+      changeStat('stress', +12);
+    } else {
+      await cgSay('@bf', '……我们是不是根本不了解对方？');
+      await cgSay('@bf', '（他转身走进了房间，把门关上了。）');
+      changeStat('love', -15);
+      changeStat('understanding', -5);
+      changeStat('stress', +20);
+    }
+  }
+  state.argueDone = true;
+  saveState();
+  cgHide();
+}
+
+// ============ 接吻剧情（占位：用争吵图 + 台词） ============
+async function triggerKissStory(opts = {}) {
+  // 暂用 cg_argue 作占位（用户后续可换成 cg_kiss.png）
+  if (!opts.fromArgue) cgShow('assets/cg_argue.png');
+  await cgSay('@bf', '……你笑什么啦。');
+  await cgSay('旁白', '他嘟起嘴，装作生气的样子。');
+  await cgSay('旁白', '你踮起脚，在他嘴角亲了一下。');
+  await cgSay('@bf', '……（脸红）');
+  await cgSay('@bf', '再来一次。');
+  changeStat('love', +20);
+  changeStat('passion', +15);
+  state.kissDone = true;
+  saveState();
+  if (!opts.fromArgue) cgHide();
+}
+
+// ============ 开发者模式 ============
+function toggleDevPanel() {
+  const p = document.getElementById('dev-panel');
+  p.classList.toggle('show');
+  if (p.classList.contains('show')) syncDevPanel();
+}
+function syncDevPanel() {
+  // 同步数值到滑块
+  ['love','passion','understanding','stress'].forEach(k => {
+    document.querySelectorAll(`[data-stat="${k}"]`).forEach(el => el.value = state.stats[k]);
+  });
+}
+function dev_triggerWalk() {
+  document.getElementById('dev-panel').classList.remove('show');
+  triggerWalkStory();
+}
+function dev_triggerArgue() {
+  document.getElementById('dev-panel').classList.remove('show');
+  triggerArgueStory();
+}
+function dev_triggerKiss() {
+  document.getElementById('dev-panel').classList.remove('show');
+  triggerKissStory();
+}
+function dev_triggerBadEnd() {
+  state.chipCount = 10;
+  applyHeroScale();
+  saveState();
+  triggerBadEnd();
+}
+function dev_setDay(day) {
+  state.gameTime = (day - 1) * 24 * 60 + 8 * 60;
+  renderClock();
+  saveState();
+}
+// 数值滑块联动
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  const stat = el.dataset && el.dataset.stat;
+  if (!stat) return;
+  const v = Math.max(0, Math.min(100, Number(el.value) || 0));
+  state.stats[stat] = v;
+  // 同步另一控件
+  document.querySelectorAll(`[data-stat="${stat}"]`).forEach(x => { if (x !== el) x.value = v; });
+  renderStats();
+  saveState();
+});
+// ~ 键切换开发者面板
+document.addEventListener('keydown', (e) => {
+  if (e.key === '`' || e.key === '~') {
+    toggleDevPanel();
+  }
+});
+
+// ============ 启动 ============
+function init() {
+  // 首次进入：显示取名界面
+  if (!state.heroName) {
+    showIntro();
+    renderStats();
+    renderClock();
+    setInterval(renderClock, 1000 * 15);
+    return;
+  }
+  // 从存档恢复场景
+  switchScene(state.scene);
+  applyLights();
+  applyComputerPose();
+  applyHeroScale();
+  if (state.badEnd) {
+    document.getElementById('bad-end').classList.add('show');
+  }
+  renderStats();
+  renderClock();
+  setInterval(renderClock, 1000 * 15); // 每 15 秒更新
+  // 初始欢迎
+  setTimeout(() => showDialog('@bf', `你回来啦～ 好想你。`), 400);
+}
+
+// 让各场景用生成好的背景图
+document.getElementById('scene-living').style.backgroundImage =
+  "url('assets/bg_living.png')";
+document.getElementById('scene-bedroom').style.backgroundImage =
+  "url('assets/bg_bedroom.png')";
+document.getElementById('scene-bathroom').style.backgroundImage =
+  "url('assets/bg_bathroom.png')";
+
+init();
+</script>
+</body>
+</html>

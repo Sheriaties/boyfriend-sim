@@ -1,0 +1,9 @@
+.DS_Store
+*.log
+node_modules/
+assets/refs/
+assets/characters/_*_backup.png
+assets/bg_study_alt.png
+assets/bg_bedroom_alt.png
+assets/bg_living_alt.png
+assets/test_boy.png
