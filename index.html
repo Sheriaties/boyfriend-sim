@@ -1185,25 +1185,34 @@
            style="left:46%; top:14%; width:10%; height:14%;">
         <span class="hotspot-label">💡 吊灯</span>
       </div>
-      <!-- 大床 -->
+      <!-- 空床 sprite（白天） -->
+      <img class="prop" id="prop-bed-empty" src="assets/bed_empty.png" alt=""
+           style="left:20%; bottom:14%; width:60%;" />
+      <!-- 睡觉床 sprite（夜晚） -->
+      <img class="prop" id="prop-bed-sleeping" src="assets/bed_sleeping.png" alt=""
+           style="left:20%; bottom:14%; width:60%; display:none; z-index:9;" />
+      <!-- 兔子玩偶（叠在床上） -->
+      <img class="prop" id="prop-bunny" src="" alt=""
+           style="left:38%; top:52%; width:5%; display:none;" />
+      <!-- 大床热区 -->
       <div class="hotspot" data-action="bed"
-           style="left:28%; top:66%; width:44%; height:26%;">
+           style="left:22%; top:56%; width:56%; height:34%;">
         <span class="hotspot-label">🛏 床</span>
       </div>
-      <!-- 兔子玩偶 -->
+      <!-- 兔子玩偶热区 -->
       <div class="hotspot" data-action="bunny"
            style="left:41%; top:52%; width:6%; height:12%;">
         <span class="hotspot-label">🐰 兔兔</span>
       </div>
-      <!-- 企鹅玩偶 -->
+      <!-- 企鹅玩偶热区 -->
       <div class="hotspot" data-action="penguin"
            style="left:48%; top:52%; width:6%; height:12%;">
         <span class="hotspot-label">🐧 企鹅</span>
       </div>
       <img class="character" id="hero-bedroom"
            src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
-           style="left: 80%; height: 62%;" />
-      <!-- 夜晚男友躺床 sprite（默认隐藏，applyDayNight 控制） -->
+           style="left: 82%; height: 52%;" />
+      <!-- 夜晚男友躺床（旧机制备用，已合并进 bed_sleeping） -->
       <img class="prop" id="prop-hero-sleeping" src="assets/characters/hero_bed.png" alt=""
            style="left:22%; bottom:16%; width:50%; display:none; z-index:11;" />
       <!-- 下楼回客厅 -->
@@ -1523,33 +1532,49 @@ function applyLights() {
   if (bed) bed.classList.toggle('dark', !state.lightsOn.bedroom);
 }
 // 昼夜切换：根据 gameTime 决定 6:00-18:00 白天，其他黑夜
+function isNightMode() {
+  const mins = state.gameTime % (24*60);
+  return mins >= 22*60 || mins < 6*60;
+}
 function applyDayNight() {
   const mins = state.gameTime % (24*60);
   const isDay = mins >= 6*60 && mins < 18*60;
-  const isNight = mins >= 22*60 || mins < 6*60;   // 深夜：22:00-06:00
+  const isNight = isNightMode();
   const win = document.getElementById('prop-window');
   if (win) win.src = isDay ? 'assets/window_day.png' : 'assets/window_night.png';
-  // 20:00 后自动关客厅灯（一次）
+  // 20:00 后自动关客厅+卧室灯（一次）
   if (mins >= 20*60 && !state.autoLightsAdjusted) {
     state.lightsOn.living = false;
+    state.lightsOn.bedroom = false;
     state.autoLightsAdjusted = true;
     applyLights();
     saveState();
   }
-  // 白天 6:00 后自动重置标记，允许下一晚再次自动关灯
-  if (isDay) {
+  // 白天 6:00 后自动开灯 + 重置标记
+  if (isDay && state.autoLightsAdjusted) {
+    state.lightsOn.living = true;
+    state.lightsOn.bedroom = true;
     state.autoLightsAdjusted = false;
+    applyLights();
+    saveState();
   }
   // 深夜：男主自动上二楼床睡觉
   const heroLiving = document.getElementById('hero-living');
   const heroBedroom = document.getElementById('hero-bedroom');
   const heroSleeping = document.getElementById('prop-hero-sleeping');
+  const bedEmpty = document.getElementById('prop-bed-empty');
+  const bedSleeping = document.getElementById('prop-bed-sleeping');
   if (heroLiving && heroBedroom && heroSleeping) {
     if (isNight && !state.atComputer) {
       heroLiving.style.display = 'none';
       heroBedroom.style.display = 'none';
-      heroSleeping.style.display = 'block';
+      // 床切换到"睡觉版"
+      if (bedEmpty)    bedEmpty.style.display = 'none';
+      if (bedSleeping) bedSleeping.style.display = 'block';
+      heroSleeping.style.display = 'none';  // 用 bedSleeping 综合图替代
     } else {
+      if (bedEmpty)    bedEmpty.style.display = 'block';
+      if (bedSleeping) bedSleeping.style.display = 'none';
       heroSleeping.style.display = 'none';
       if (!state.atComputer) {
         heroLiving.style.display = '';
@@ -1887,10 +1912,45 @@ const INTERACTIONS = {
     changeStat('love', +3);
     changeStat('stress', -3);
   },
-  bed: () => {
-    showDialog('系统', '要休息一下吗？（占位）');
-    changeStat('understanding', +2);
-    changeStat('stress', -5);
+  bed: (evt) => {
+    const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="bed"]');
+    if (isNightMode()) {
+      // 夜晚：一起睡 / 再玩会儿
+      showMenu(anchor, [
+        {
+          label: '🌙 一起睡',
+          onClick: () => {
+            showDialog('@bf', '嗯……过来。（他掀开被子给你留了位置。）');
+            // 同居情侣级数值
+            changeStat('love', +8);
+            changeStat('understanding', +8);
+            changeStat('passion', +8);
+            changeStat('stress', -20);
+            // 时间跳到次日 07:00
+            const t = state.gameTime;
+            const nextDay = Math.floor(t / (24*60)) + 1;
+            state.gameTime = nextDay * 24 * 60 + 7 * 60;
+            state.sleepPrompted = false;
+            state.autoLightsAdjusted = false;
+            renderClock();
+            applyDayNight();
+            saveState();
+            setTimeout(() => showDialog('系统', `——第 ${nextDay + 1} 天 07:00——`), 3000);
+          }
+        },
+        {
+          label: '🌃 再玩会儿',
+          onClick: () => {
+            showDialog('系统', '你悄悄退出了卧室，不想吵醒他。');
+          }
+        },
+      ]);
+    } else {
+      // 白天：占位
+      showDialog('系统', '要休息一下吗？（占位）');
+      changeStat('understanding', +2);
+      changeStat('stress', -5);
+    }
   },
   bunny: () => {
     showDialog('@bf', '这是兔兔，你上次送我的。我一直放床头哦。');
@@ -1959,8 +2019,15 @@ const INTERACTIONS = {
 
 // ============ 事件绑定 ============
 // 哪些 action 不推进时间（弹菜单/切换姿势本身）
-const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer']);
-// 哪些菜单选项点击后需要推进（在菜单内单独调用 advanceTime）
+const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer','goOut']);
+// 夜晚被禁用的白天专属 action（占位对白）
+const DAYTIME_ONLY_ACTIONS = new Set(['computer','sofa','chip','goOut']);
+const NIGHT_PLACEHOLDER = {
+  computer: '现在半夜了，明天再工作吧……',
+  sofa:     '沙发上凉凉的，没有他在——回床上吧。',
+  chip:     '深夜吃薯片……算了，别吵到他。',
+  goOut:    '这么晚出门不安全，等明天。',
+};
 
 document.addEventListener('click', (e) => {
   // 已结局：拦截所有交互（除结局屏的重来按钮）
@@ -1970,9 +2037,13 @@ document.addEventListener('click', (e) => {
   const spot = e.target.closest('[data-action]');
   if (spot) {
     const action = spot.dataset.action;
+    // 夜晚：白天专属 action 只弹占位对白，不推进时间
+    if (isNightMode() && DAYTIME_ONLY_ACTIONS.has(action)) {
+      showDialog('系统', NIGHT_PLACEHOLDER[action] || '……深夜就别做这个了。');
+      return;
+    }
     const fn = INTERACTIONS[action];
     if (fn) fn({ currentTarget: spot });
-    // 触发即消耗时间（除少数不消耗的）
     if (!NO_TIME_ACTIONS.has(action)) advanceTime();
   }
 });
