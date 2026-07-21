@@ -39,7 +39,7 @@
     border-bottom: 2px solid rgba(0,0,0,0.1);
     display: flex;
     align-items: center;
-    padding: 0 1.2%;
+    padding: 0 7vw 0 1.2%;  /* 右侧留 7vw 给回封面按钮 */
     gap: 1.2%;
     z-index: 30;
     backdrop-filter: blur(6px);
@@ -383,11 +383,11 @@
   }
   body.debug .hotspot-label { opacity: 1; transform: none; }
 
-  /* BAD END 覆盖屏 */
+  /* BAD END 覆盖屏 —— 用 PV 图作背景 + 半透明面板 */
   .bad-end {
     position: absolute;
     inset: 0;
-    background: #0a0508;
+    background: #0a0508 center/cover no-repeat;
     z-index: 200;
     display: none;
     align-items: center;
@@ -395,6 +395,18 @@
     animation: fadeInBlack 1.2s ease;
   }
   .bad-end.show { display: flex; }
+  /* 图片背景暗化叠加，便于文字阅读 */
+  .bad-end::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 100%);
+    pointer-events: none;
+  }
+  /* True End 特殊：暖金希望配色（浅色渐变 + 亮字） */
+  .bad-end.hopeful::before {
+    background: linear-gradient(180deg, rgba(255,220,180,0.25) 0%, rgba(255,180,120,0.55) 100%);
+  }
   @keyframes fadeInBlack {
     from { opacity: 0; }
     to   { opacity: 1; }
@@ -406,42 +418,50 @@
     text-align: center;
     padding: 2vw 3vw;
     max-width: 82%;
-  }
-  .bad-end-img {
-    width: 22vw;
-    max-height: 55vh;
-    object-fit: contain;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    filter: drop-shadow(0 0 20px rgba(255,80,80,0.35));
-    margin-bottom: 1.6vw;
-    animation: shakeFat 3s ease-in-out infinite;
-  }
-  @keyframes shakeFat {
-    0%,100% { transform: translateX(0); }
-    25% { transform: translateX(-4px) rotate(-1deg); }
-    75% { transform: translateX(4px) rotate(1deg); }
+    position: relative;
+    z-index: 2;
   }
   .bad-end-title {
-    font-size: 5vw;
+    font-size: 3.2vw;
     font-weight: 900;
     color: #ff3355;
-    letter-spacing: 0.4em;
-    text-shadow: 4px 4px 0 #4a0010, 0 0 20px rgba(255,60,80,0.6);
+    letter-spacing: 0.3em;
+    text-shadow: 3px 3px 0 #4a0010, 0 0 24px rgba(0,0,0,0.7);
     margin-bottom: 0.4vw;
     font-family: "Courier New", monospace;
   }
+  .bad-end.hopeful .bad-end-title {
+    color: #fff4d6;
+    text-shadow: 3px 3px 0 #6a3a10, 0 0 30px rgba(255,220,150,0.9);
+  }
   .bad-end-subtitle {
-    font-size: 1.8vw;
+    font-size: 1.4vw;
     color: #ffd8a8;
     letter-spacing: 0.2em;
     margin-bottom: 1.6vw;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+  }
+  .bad-end.hopeful .bad-end-subtitle {
+    color: #fff8ea;
+    text-shadow: 0 2px 8px rgba(120,60,20,0.6);
   }
   .bad-end-body {
     font-size: 1.05vw;
-    color: #ccc;
+    color: #f0e8dc;
     line-height: 1.9;
     margin-bottom: 2vw;
+    background: rgba(0,0,0,0.55);
+    padding: 1.2vw 1.8vw;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.2);
+    max-width: 44vw;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+  }
+  .bad-end.hopeful .bad-end-body {
+    color: #4a2a10;
+    background: rgba(255,248,230,0.85);
+    border-color: rgba(255,180,120,0.6);
+    text-shadow: none;
   }
   .bad-end-btn {
     background: #ffd8a8;
@@ -458,6 +478,13 @@
   }
   .bad-end-btn:hover { background: #ffe5c0; transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #4a1a10; }
   .bad-end-btn:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 #4a1a10; }
+  .bad-end.hopeful .bad-end-btn {
+    background: #fff;
+    color: #6a3a10;
+    border-color: #ffb84a;
+    box-shadow: 4px 4px 0 #b8842a;
+  }
+  .bad-end.hopeful .bad-end-btn:hover { background: #fff8ea; box-shadow: 6px 6px 0 #b8842a; }
 
   /* 取名开场界面 */
   .intro-screen {
@@ -526,6 +553,313 @@
   .intro-btn:hover { background: #d94a80; transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #4a1020; }
   .intro-btn:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 #4a1020; }
   .intro-btn:disabled { background: #ccc; border-color: #999; box-shadow: 4px 4px 0 #888; cursor: not-allowed; }
+
+  /* ============ 封面主界面 ============ */
+  .cover-screen {
+    position: absolute;
+    inset: 0;
+    background: #000 url('assets/cover.png') center/cover no-repeat;
+    z-index: 350;
+    display: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .cover-screen.show { display: block; }
+  .cover-btn {
+    position: absolute;
+    /* 两个空白面板位置（对齐 cover.png 里的白色方框） */
+    left: 56%;
+    width: 33%;
+    height: 12%;
+    background: transparent;
+    color: #6a3a2a;
+    border: 3px solid transparent;
+    font-family: inherit;
+    font-size: 1.8vw;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s;
+    text-shadow: 0 2px 4px rgba(255,255,255,0.8);
+  }
+  .cover-btn:hover {
+    background: rgba(255,255,255,0.35);
+    border-color: rgba(255,120,150,0.6);
+    box-shadow: 0 0 24px rgba(255,120,150,0.5);
+    color: #c73e73;
+    transform: scale(1.02);
+  }
+  .cover-btn.new-game { top: 40%; }
+  .cover-btn.load     { top: 57%; }
+  .cover-btn.load:disabled { color: #aaa; text-shadow: none; cursor: not-allowed; }
+  .cover-btn.load:disabled:hover { background: transparent; border-color: transparent; box-shadow: none; transform: none; color: #aaa; }
+
+  /* 回封面按钮（HUD 右上，白底显眼版） */
+  #home-btn {
+    position: absolute;
+    top: 0.8vw;
+    right: 0.8vw;
+    width: 5vw;
+    height: 5vw;
+    background: #fff;
+    color: #c73e73;
+    border: 3px solid #c73e73;
+    border-radius: 8px;
+    font-size: 2vw;
+    cursor: pointer;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 3px 3px 0 rgba(199,62,115,0.35);
+    font-weight: 700;
+    transition: all 0.15s;
+  }
+  #home-btn:hover {
+    background: #ffe0ec;
+    transform: translate(-2px,-2px);
+    box-shadow: 5px 5px 0 rgba(199,62,115,0.4);
+  }
+  #home-btn:active {
+    transform: translate(1px,1px);
+    box-shadow: 1px 1px 0 rgba(199,62,115,0.4);
+  }
+
+  /* 通用确认弹窗 */
+  .confirm-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 400;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirm-modal.show { display: flex; }
+  .confirm-box {
+    background: #fff8ea;
+    border: 4px solid #3a2a1a;
+    border-radius: 4px;
+    padding: 2vw 2.5vw;
+    box-shadow: inset 0 0 0 2px #f5e0b0, 6px 6px 0 rgba(0,0,0,0.35);
+    min-width: 28vw;
+    text-align: center;
+    animation: menuPop 0.15s ease-out;
+  }
+  .confirm-text {
+    font-size: 1.3vw;
+    font-weight: 700;
+    color: #3a2a1a;
+    margin-bottom: 1.4vw;
+    letter-spacing: 0.1em;
+  }
+  .confirm-actions { display: flex; gap: 1.2vw; justify-content: center; }
+  .confirm-btn {
+    background: #fff;
+    color: #3a2a1a;
+    border: 3px solid #3a2a1a;
+    padding: 0.6vw 2vw;
+    font-family: inherit;
+    font-size: 1.1vw;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    border-radius: 2px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+  }
+  .confirm-btn:hover { background: #ffdb8c; transform: translate(-2px,-2px); box-shadow: 5px 5px 0 rgba(0,0,0,0.3); }
+  .confirm-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
+  .confirm-btn.primary { background: #c73e73; color: #fff; border-color: #6a1a3a; box-shadow: 3px 3px 0 #4a1020; }
+  .confirm-btn.primary:hover { background: #d94a80; box-shadow: 5px 5px 0 #4a1020; }
+  .confirm-btn.primary:active { box-shadow: 1px 1px 0 #4a1020; }
+
+  /* ============ 2048 迷你游戏弹窗 ============ */
+  .mini-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 380;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .mini-modal.show { display: flex; }
+  .mini-box {
+    background: #fff8ea;
+    border: 4px solid #3a2a1a;
+    border-radius: 6px;
+    padding: 1.8vw 2.4vw;
+    box-shadow: inset 0 0 0 2px #f5e0b0, 6px 6px 0 rgba(0,0,0,0.4);
+    text-align: center;
+    animation: menuPop 0.2s ease-out;
+    position: relative;
+    max-width: 90vw;
+  }
+  .mini-title {
+    font-size: 1.8vw;
+    font-weight: 800;
+    color: #6a3a1a;
+    letter-spacing: 0.3em;
+    margin-bottom: 0.4vw;
+  }
+  .mini-hint {
+    font-size: 0.9vw;
+    color: #8a5a3a;
+    margin-bottom: 1vw;
+  }
+  .mini-scoreline {
+    display: flex;
+    justify-content: center;
+    gap: 1.5vw;
+    margin-bottom: 1vw;
+    font-size: 1.1vw;
+    color: #3a2a1a;
+  }
+  .mini-score-tag {
+    background: #3a2a1a;
+    color: #fff8ea;
+    padding: 0.35vw 1vw;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+  }
+  .mini-score-tag b { color: #ffdb8c; font-size: 1.3vw; }
+
+  .g2048-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.6vw;
+    background: #3a2a1a;
+    padding: 0.6vw;
+    border-radius: 4px;
+    width: 34vw;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    touch-action: none;
+    user-select: none;
+  }
+  .g2048-cell {
+    background: #d9c7a3;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "SF Mono","Menlo",monospace;
+    font-weight: 900;
+    font-size: 2.6vw;
+    color: #3a2a1a;
+    transition: transform 0.12s ease, background 0.12s;
+  }
+  .g2048-cell[data-v="0"]    { background: #d9c7a3; color: transparent; }
+  .g2048-cell[data-v="2"]    { background: #f2e6cc; color: #6a3a1a; }
+  .g2048-cell[data-v="4"]    { background: #f2d9a8; color: #6a3a1a; }
+  .g2048-cell[data-v="8"]    { background: #ffb37a; color: #fff; }
+  .g2048-cell[data-v="16"]   { background: #ff9860; color: #fff; }
+  .g2048-cell[data-v="32"]   { background: #ff7a3e; color: #fff; }
+  .g2048-cell[data-v="64"]   { background: #ff5a3e; color: #fff; }
+  .g2048-cell[data-v="128"]  { background: #ffd066; color: #fff; font-size: 1.7vw; }
+  .g2048-cell[data-v="256"]  { background: #ffc040; color: #fff; font-size: 1.7vw; }
+  .g2048-cell[data-v="512"]  { background: #ffab1a; color: #fff; font-size: 1.7vw; }
+  .g2048-cell[data-v="1024"] { background: #ff8ab5; color: #fff; font-size: 1.4vw; }
+  .g2048-cell[data-v="2048"] { background: #c73e73; color: #fff; font-size: 1.4vw; box-shadow: 0 0 20px rgba(199,62,115,0.6); }
+  .g2048-cell.new { animation: cellPop 0.2s ease-out; }
+  @keyframes cellPop {
+    from { transform: scale(0.4); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  .g2048-cell.merged { animation: cellMerge 0.2s ease-out; }
+  @keyframes cellMerge {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+
+  /* 2048 方向按钮 */
+  .g2048-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 0.3vw;
+    width: 12vw;
+    margin: 1vw auto 0;
+  }
+  .g2048-ctrl {
+    background: #3a2a1a;
+    color: #ffdb8c;
+    border: 2px solid #6a3a1a;
+    border-radius: 3px;
+    font-size: 1.5vw;
+    font-weight: 900;
+    cursor: pointer;
+    padding: 0.3vw 0;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+    font-family: inherit;
+  }
+  .g2048-ctrl:hover { background: #6a3a1a; }
+  .g2048-ctrl:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
+  .g2048-ctrl.empty { visibility: hidden; }
+  .g2048-ctrl-up    { grid-column: 2; grid-row: 1; }
+  .g2048-ctrl-left  { grid-column: 1; grid-row: 2; }
+  .g2048-ctrl-right { grid-column: 3; grid-row: 2; }
+  .g2048-ctrl-down  { grid-column: 2; grid-row: 3; }
+
+  /* 彩蛋游戏机（藏在弹窗角落，只露一部分） */
+  .g2048-console-egg {
+    position: absolute;
+    width: 8vw;
+    z-index: 5;
+    cursor: pointer;
+    transition: all 0.5s cubic-bezier(0.5,0.1,0.3,1.2);
+    filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.3));
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    pointer-events: auto;
+  }
+  .g2048-console-egg:hover { filter: drop-shadow(0 0 12px rgba(255,180,80,0.8)) drop-shadow(2px 4px 4px rgba(0,0,0,0.3)); }
+  /* 4 个角落位置 */
+  .g2048-console-egg.pos-tl { top: -3.5vw; left: -3.5vw; transform: rotate(-25deg); }
+  .g2048-console-egg.pos-tr { top: -3.5vw; right: -3.5vw; left: auto; transform: rotate(25deg); }
+  .g2048-console-egg.pos-bl { bottom: -3.5vw; left: -3.5vw; transform: rotate(25deg); }
+  .g2048-console-egg.pos-br { bottom: -3.5vw; right: -3.5vw; left: auto; transform: rotate(-25deg); }
+  .mini-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.8vw;
+    margin-top: 1vw;
+  }
+  .mini-actions button {
+    background: #fff;
+    color: #3a2a1a;
+    border: 3px solid #3a2a1a;
+    padding: 0.5vw 1.2vw;
+    font-family: inherit;
+    font-size: 0.9vw;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    border-radius: 2px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+  }
+  .mini-actions button:hover { background: #ffdb8c; transform: translate(-2px,-2px); box-shadow: 5px 5px 0 rgba(0,0,0,0.3); }
+  .mini-actions button:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
+  .mini-actions button.primary { background: #c73e73; color: #fff; border-color: #6a1a3a; box-shadow: 3px 3px 0 #4a1020; }
+  .mini-actions button.primary:hover { background: #d94a80; box-shadow: 5px 5px 0 #4a1020; }
+  .mini-close {
+    position: absolute;
+    top: -0.7vw; right: -0.7vw;
+    width: 2.2vw; height: 2.2vw;
+    background: #c73e73;
+    color: #fff;
+    border: 3px solid #6a1a3a;
+    border-radius: 50%;
+    font-size: 1.1vw;
+    cursor: pointer;
+    font-weight: 900;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+  }
+  .mini-close:hover { background: #d94a80; }
 
   /* ============ CG 播放器 ============ */
   .cg-overlay {
@@ -628,7 +962,7 @@
   /* ============ 开发者模式面板 ============ */
   #dev-toggle {
     position: absolute;
-    top: 1vw; right: 1vw;
+    top: 1vw; right: 6.5vw;
     width: 2.4vw;
     height: 2.4vw;
     background: rgba(0,0,0,0.5);
@@ -755,6 +1089,9 @@
     <!-- 客厅场景（起点） -->
     <div class="scene active" id="scene-living" data-name="客厅">
       <div class="scene-label">客厅</div>
+      <!-- 窗户 sprite（昼夜切换） -->
+      <img class="prop" id="prop-window" src="assets/window_day.png" alt=""
+           style="right:20%; top:32%; width:32%;" />
       <!-- 吊灯 sprite -->
       <img class="prop" data-lamp src="assets/pendant_lamp.png" alt=""
            style="left:40%; top:2%; width:20%;" />
@@ -840,6 +1177,14 @@
     <!-- 卧室场景（夹层） -->
     <div class="scene" id="scene-bedroom" data-name="卧室">
       <div class="scene-label">卧室</div>
+      <!-- 吊灯 sprite（卧室） -->
+      <img class="prop" data-lamp src="assets/pendant_lamp.png" alt=""
+           style="left:44%; top:2%; width:14%;" />
+      <!-- 吊灯热区（卧室） -->
+      <div class="hotspot" data-action="lamp"
+           style="left:46%; top:14%; width:10%; height:14%;">
+        <span class="hotspot-label">💡 吊灯</span>
+      </div>
       <!-- 大床 -->
       <div class="hotspot" data-action="bed"
            style="left:28%; top:66%; width:44%; height:26%;">
@@ -858,6 +1203,9 @@
       <img class="character" id="hero-bedroom"
            src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
            style="left: 80%; height: 62%;" />
+      <!-- 夜晚男友躺床 sprite（默认隐藏，applyDayNight 控制） -->
+      <img class="prop" id="prop-hero-sleeping" src="assets/characters/hero_bed.png" alt=""
+           style="left:22%; bottom:16%; width:50%; display:none; z-index:11;" />
       <!-- 下楼回客厅 -->
       <div class="nav-arrow down" data-nav="living">▼<span class="label">下楼</span></div>
     </div>
@@ -907,6 +1255,50 @@
 
   <!-- 开发者模式按钮 -->
   <button id="dev-toggle" title="开发者模式 (~)" onclick="toggleDevPanel()">⚙</button>
+  <!-- 回封面按钮 -->
+  <button id="home-btn" title="回到封面" onclick="goToCover()">🏠</button>
+
+  <!-- 通用确认弹窗 -->
+  <div id="confirm-modal" class="confirm-modal">
+    <div class="confirm-box">
+      <div class="confirm-text" id="confirm-text">是否回到主界面？</div>
+      <div class="confirm-actions">
+        <button class="confirm-btn primary" id="confirm-yes">是</button>
+        <button class="confirm-btn" id="confirm-no">否</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2048 迷你游戏弹窗 -->
+  <div id="mini-2048" class="mini-modal">
+    <div class="mini-box">
+      <img class="g2048-console-egg pos-br" id="g2048-console" src="assets/console.png" alt="" style="display:none;" />
+      <button class="mini-close" onclick="close2048()">×</button>
+      <div class="mini-title">2 0 4 8</div>
+      <div class="mini-hint">点方向按钮 / 手指滑动</div>
+      <div class="mini-scoreline">
+        <span class="mini-score-tag">分数 <b id="g2048-score">0</b></span>
+        <span class="mini-score-tag">最佳 <b id="g2048-best">0</b></span>
+      </div>
+      <div class="g2048-board" id="g2048-board"></div>
+      <div class="g2048-controls">
+        <button class="g2048-ctrl g2048-ctrl-up"    onclick="move2048('U')">▲</button>
+        <button class="g2048-ctrl g2048-ctrl-left"  onclick="move2048('L')">◀</button>
+        <button class="g2048-ctrl g2048-ctrl-right" onclick="move2048('R')">▶</button>
+        <button class="g2048-ctrl g2048-ctrl-down"  onclick="move2048('D')">▼</button>
+      </div>
+      <div class="mini-actions">
+        <button onclick="new2048()">🔄 重开</button>
+        <button class="primary" onclick="close2048()">离开</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 封面主界面 -->
+  <div id="cover-screen" class="cover-screen">
+    <button class="cover-btn new-game" onclick="coverNewGame()">新 游 戏</button>
+    <button class="cover-btn load" id="cover-load-btn" onclick="coverLoad()">载入游戏</button>
+  </div>
 
   <!-- 开发者面板 -->
   <div id="dev-panel">
@@ -918,6 +1310,24 @@
     <button onclick="dev_triggerArgue()">▶ 争吵剧情</button>
     <button onclick="dev_triggerKiss()">▶ 和好接吻</button>
     <button onclick="dev_triggerBadEnd()">💀 薯片 Bad End</button>
+
+    <h4>结局测试</h4>
+    <select id="dev-ending-select" style="width:100%;padding:0.35vw;background:#333;color:#fff;border:1px solid #555;font-family:inherit;font-size:0.8vw;margin-bottom:0.4vw;">
+      <option value="">— 选择结局 —</option>
+      <option value="breakup_now">💔 分手（立即）</option>
+      <option value="fwb">🔥 炮友（立即）</option>
+      <option value="puppy">🐕 男朋友是我的小狗</option>
+      <option value="yandere">🔗 病娇囚禁</option>
+      <option value="exhausted">💀 虚脱</option>
+      <option value="disappeared">👻 男主失踪</option>
+      <option value="breakup_final">💔 分手（4周）</option>
+      <option value="roommate">🛋 室友式同居</option>
+      <option value="adversary">⚔️ 对抗路情侣</option>
+      <option value="normal_end">💕 Normal 平淡</option>
+      <option value="true_end">🌟 True End 相互滋养</option>
+      <option value="fat">🍟 薯片胖胖</option>
+    </select>
+    <button onclick="dev_showEnding()">▶ 播放选中结局</button>
 
     <h4>数值直改</h4>
     <div class="row"><label>心动</label><input type="range" min="0" max="100" data-stat="love"><input type="number" min="0" max="100" data-stat="love"></div>
@@ -946,7 +1356,7 @@
         自从他离不开你手里的薯片袋，他也就再也离不开沙发了。<br>
         据说你们分手那天他哭着吃了三包，然后打开了外卖 App。
       </div>
-      <button class="bad-end-btn" onclick="resetGame()">重新开始</button>
+      <button class="bad-end-btn" onclick="resetGame()">认领新的男朋友</button>
     </div>
   </div>
 </div>
@@ -956,16 +1366,21 @@
 const DEFAULT_STATE = {
   stats: { love: 20, passion: 10, understanding: 20, stress: 15 },
   scene: 'living',
-  lightsOn: true,
+  lightsOn: { living: true, bedroom: true },   // 每场景独立
+  autoLightsAdjusted: false,                    // 夜晚自动关灯是否已执行
   atComputer: false,
   chipCount: 0,
   outCount: 0,
   walkDone: false,
   argueDone: false,
   kissDone: false,
+  switchEggShown: false,
+  coopGameDone: false,
   badEnd: false,
+  ended: false,
+  endingId: null,
   heroName: '',
-  gameTime: 8 * 60,   // 分钟数，起始为第1天 08:00
+  gameTime: 8 * 60,
   lastTick: Date.now(),
 };
 const STAT_MAX = 100;
@@ -978,7 +1393,13 @@ function loadState() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return structuredClone(DEFAULT_STATE);
-    return { ...structuredClone(DEFAULT_STATE), ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    // 老存档兼容：lightsOn 曾是 boolean
+    if (typeof parsed.lightsOn === 'boolean') {
+      parsed.lightsOn = { living: parsed.lightsOn, bedroom: true };
+    }
+    return { ...structuredClone(DEFAULT_STATE), ...parsed,
+             lightsOn: {...DEFAULT_STATE.lightsOn, ...(parsed.lightsOn || {})} };
   } catch { return structuredClone(DEFAULT_STATE); }
 }
 function saveState() {
@@ -993,6 +1414,8 @@ function changeStat(key, delta) {
   renderStats();
   if (real !== 0) floatNumber(key, real);
   saveState();
+  // 数值变化后检查立即死亡结局
+  checkImmediateEnding();
 }
 
 function renderStats() {
@@ -1030,11 +1453,10 @@ function renderClock() {
 function advanceTime(hours = HOURS_PER_ACTION) {
   state.gameTime = (state.gameTime | 0) + hours * 60;
   renderClock();
+  applyDayNight();
   // 是否跨过午夜 24:00 → 触发睡觉
   const dayMins = state.gameTime % (24*60);
   if (dayMins >= 22*60 || dayMins < 6*60) {
-    // 22:00 之后或 06:00 之前 → 认为该睡觉
-    // 只在跨过晚间时触发一次
     if (!state.sleepPrompted) {
       state.sleepPrompted = true;
       setTimeout(() => triggerBedtime(), 800);
@@ -1043,6 +1465,8 @@ function advanceTime(hours = HOURS_PER_ACTION) {
     state.sleepPrompted = false;
   }
   saveState();
+  // 4 周结算判定
+  checkFinalEnding();
 }
 function triggerBedtime() {
   showDialog('@bf', '有点困了……我们上去睡吧？');
@@ -1094,7 +1518,45 @@ document.addEventListener('click', (e) => {
 
 // ============ 灯光 & 电脑姿势 ============
 function applyLights() {
-  document.getElementById('scene-living').classList.toggle('dark', !state.lightsOn);
+  document.getElementById('scene-living').classList.toggle('dark', !state.lightsOn.living);
+  const bed = document.getElementById('scene-bedroom');
+  if (bed) bed.classList.toggle('dark', !state.lightsOn.bedroom);
+}
+// 昼夜切换：根据 gameTime 决定 6:00-18:00 白天，其他黑夜
+function applyDayNight() {
+  const mins = state.gameTime % (24*60);
+  const isDay = mins >= 6*60 && mins < 18*60;
+  const isNight = mins >= 22*60 || mins < 6*60;   // 深夜：22:00-06:00
+  const win = document.getElementById('prop-window');
+  if (win) win.src = isDay ? 'assets/window_day.png' : 'assets/window_night.png';
+  // 20:00 后自动关客厅灯（一次）
+  if (mins >= 20*60 && !state.autoLightsAdjusted) {
+    state.lightsOn.living = false;
+    state.autoLightsAdjusted = true;
+    applyLights();
+    saveState();
+  }
+  // 白天 6:00 后自动重置标记，允许下一晚再次自动关灯
+  if (isDay) {
+    state.autoLightsAdjusted = false;
+  }
+  // 深夜：男主自动上二楼床睡觉
+  const heroLiving = document.getElementById('hero-living');
+  const heroBedroom = document.getElementById('hero-bedroom');
+  const heroSleeping = document.getElementById('prop-hero-sleeping');
+  if (heroLiving && heroBedroom && heroSleeping) {
+    if (isNight && !state.atComputer) {
+      heroLiving.style.display = 'none';
+      heroBedroom.style.display = 'none';
+      heroSleeping.style.display = 'block';
+    } else {
+      heroSleeping.style.display = 'none';
+      if (!state.atComputer) {
+        heroLiving.style.display = '';
+        heroBedroom.style.display = '';
+      }
+    }
+  }
 }
 function applyComputerPose() {
   const seated = state.scene === 'living' && state.atComputer;
@@ -1116,13 +1578,176 @@ function applyHeroScale() {
 
 // ============ BAD END ============
 function triggerBadEnd() {
-  state.badEnd = true;
-  saveState();
-  document.getElementById('bad-end').classList.add('show');
+  triggerEnding('fat');
 }
 function resetGame() {
   localStorage.removeItem(SAVE_KEY);
   location.reload();
+}
+
+// ============ 结局系统 ============
+const ENDINGS = {
+  breakup_now: {
+    title: '💔 BAD END · 分手',
+    subtitle: '爱意归零',
+    body: [
+      '你们最后一次坐在一起，什么也没说。',
+      '第二天他搬走了。你们再也没联系。',
+    ],
+  },
+  fwb: {
+    title: '🔥 BAD END · 炮友',
+    subtitle: '身体在，感情死了',
+    body: [
+      '你不再等他的回家，他也不再问你今天怎么样。',
+      '但每次身体交缠时，你们都假装还爱着彼此。',
+    ],
+  },
+  puppy: {
+    title: '🐕 SPECIAL END · 男朋友是我的小狗',
+    subtitle: '"你说什么都是对的"',
+    body: [
+      '这个曾经高傲的人，彻底屈服在你面前了。',
+      '他从身体到灵魂，彻彻底底都是你的了，对你言听计从。',
+      '你成了这只小狗的主人。',
+      '——但这真的是你想要的爱情吗？',
+    ],
+  },
+  yandere: {
+    title: '🔗 SPECIAL END · 病娇囚禁',
+    subtitle: '你被他锁了起来',
+    body: [
+      '你被男朋友囚禁起来了。从此你的全部都属于他。',
+      '你似乎爱上了这种身心都属于这个男人的感觉',
+      '即使天天被锁链束缚，你也不想离开他',
+      '……亲爱的主人，请再多给我一点爱',
+    ],
+  },
+  exhausted: {
+    title: '💀 BAD END · 虚脱',
+    subtitle: '你把他榨干了',
+    body: [
+      '你们都很享受在床上翻云覆雨的时刻',
+      '你们像两只蝉一样仿佛来到地面上都是就是为了交配',
+      '一天，一个月，一年',
+      '记不清是谁先晕倒在床上了',
+      '只是警察破门进来的时候所有人都羞红了脸'
+    ],
+  },
+  disappeared: {
+    title: '👻 BAD END · 男主失踪',
+    subtitle: '他不想让你看见他憔悴的样子',
+    body: [
+      '你回到家，桌上有一张纸条：',
+      '"对不起，我先离开一段时间。等我状态好了再回来找你。"',
+      '然后你听说他退学了，再然后就没有然后了。',
+    ],
+  },
+  breakup_final: {
+    title: '💔 END · 分手',
+    subtitle: '走到了这一步',
+    body: [
+      '4 周之后，你们坐在客厅里，谁都没先开口。',
+      '你很说了解面前这个男人，也很难说有什么理由把他留下来',
+      '"就到这里吧。" 他先说了。你点了点头。',
+    ],
+  },
+  roommate: {
+    title: '🛋 END · 室友式同居',
+    subtitle: '相敬如宾',
+    body: [
+      '你们一起做饭、一起看剧，一起变老。',
+      '只是很久没有牵过手，也很久没有亲过嘴了。',
+    ],
+  },
+  adversary: {
+    title: '⚔️ END · 对抗路情侣',
+    subtitle: '你们既是解药，也是毒药',
+    body: [
+      '你们都在拼命工作，也都在拼命想念对方。',
+      '每个吵完架的深夜，你们最后总会抱在一起入睡。',
+      '你们解决问题的地方，也只剩下了床上',
+    ],
+  },
+  normal_end: {
+    title: '💕 NORMAL END · 平淡长久',
+    subtitle: '"这样就很好"',
+    body: [
+      '4 周之后，你们平平淡淡地过着日子。',
+      '偶尔你会望着他发呆，心里想着灵魂伴侣是什么样子。',
+      '但下一秒，他又把你抱住了。',
+    ],
+  },
+  true_end: {
+    title: '✨ TRUE END',
+    subtitle: '相 互 滋 养',
+    body: [
+      '你们完全懂了对方，也完全爱着对方。',
+      '童话在你们身边降临，你们都愿意为对方，成为更好的自己。',
+      '——愿你们的日子，永远像今天的清晨这样明亮。',
+    ],
+  },
+  fat: {
+    title: '🍟 BAD END · 肥肥的男孩子没人爱',
+    subtitle: '',
+    body: [
+      '自从他离不开你手里的薯片袋，他也就再也离不开沙发了。',
+      '据说你们分手那天他哭着吃了三包，然后打开了外卖 App。',
+    ],
+  },
+};
+
+function triggerEnding(id) {
+  if (state.ended) return;
+  state.ended = true;
+  state.endingId = id;
+  saveState();
+  showEnding(id);
+}
+function showEnding(id) {
+  const e = ENDINGS[id];
+  if (!e) return;
+  document.querySelector('#bad-end .bad-end-title').textContent = e.title;
+  document.querySelector('#bad-end .bad-end-subtitle').textContent = e.subtitle;
+  document.querySelector('#bad-end .bad-end-body').innerHTML = e.body.join('<br>');
+  const modal = document.getElementById('bad-end');
+  // PV 图作背景
+  modal.style.backgroundImage = `url('assets/pv_${id}.png')`;
+  // True End 用希望配色
+  modal.classList.toggle('hopeful', id === 'true_end');
+  modal.classList.add('show');
+}
+// 立即死亡结局判定：任何数值变化后调用
+function checkImmediateEnding() {
+  if (state.ended) return true;
+  const s = state.stats;
+  // 优先级：压力=100（失踪）> 激情=100（小狗/囚禁/虚脱）> 心动=0（分手/炮友）
+  if (s.stress >= 100) { triggerEnding('disappeared'); return true; }
+  if (s.passion >= 100) {
+    if (s.stress < 30)      triggerEnding('puppy');
+    else if (s.stress < 60) triggerEnding('yandere');
+    else                    triggerEnding('exhausted');
+    return true;
+  }
+  if (s.love <= 0) {
+    if (s.passion < 50) triggerEnding('breakup_now');
+    else triggerEnding('fwb');
+    return true;
+  }
+  return false;
+}
+// 4 周（28 天）结算
+function checkFinalEnding() {
+  if (state.ended) return false;
+  const day = Math.floor(state.gameTime / (24*60)) + 1;
+  if (day < 29) return false;  // 4 周整 = 第 29 天开始结算（走完 28 天）
+  const s = state.stats;
+  if (s.love < 50)         { triggerEnding('breakup_final'); return true; }
+  if (s.passion < 70)      { triggerEnding('roommate');      return true; }
+  if (s.stress >= 30)      { triggerEnding('adversary');     return true; }
+  if (s.understanding >= 100) { triggerEnding('true_end');   return true; }
+  triggerEnding('normal_end');
+  return true;
 }
 
 // ============ 取名 ============
@@ -1141,6 +1766,12 @@ function submitHeroName() {
   state.heroName = name;
   saveState();
   document.getElementById('intro-screen').classList.remove('show');
+  hideCover();
+  // 进入正式游戏
+  switchScene(state.scene);
+  applyLights();
+  applyComputerPose();
+  applyHeroScale();
   // 欢迎语用新名字
   setTimeout(() => showDialog(state.heroName, '……那你要好好爱我哦。'), 500);
 }
@@ -1206,15 +1837,7 @@ const INTERACTIONS = {
       {
         label: '🎮 玩游戏',
         onClick: () => {
-          state.atComputer = true;
-          applyComputerPose();
-          showDialog('@bf', '打把游戏！你在旁边给我加油嘛～');
-          changeStat('love', +2);
-          changeStat('passion', +3);
-          changeStat('stress', -4);
-          changeStat('understanding', +1);
-          saveState();
-          advanceTime();
+          open2048();
         }
       },
       {
@@ -1247,11 +1870,12 @@ const INTERACTIONS = {
   },
   lamp: (evt) => {
     const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="lamp"]');
+    const sceneKey = state.scene;   // living / bedroom
     showMenu(anchor, [
       {
-        label: state.lightsOn ? '关灯' : '开灯',
+        label: state.lightsOn[sceneKey] ? '关灯' : '开灯',
         onClick: () => {
-          state.lightsOn = !state.lightsOn;
+          state.lightsOn[sceneKey] = !state.lightsOn[sceneKey];
           applyLights();
           saveState();
         }
@@ -1339,6 +1963,8 @@ const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer']);
 // 哪些菜单选项点击后需要推进（在菜单内单独调用 advanceTime）
 
 document.addEventListener('click', (e) => {
+  // 已结局：拦截所有交互（除结局屏的重来按钮）
+  if (state.ended && !e.target.closest('.bad-end-btn') && !e.target.closest('#dev-panel') && !e.target.closest('#dev-toggle')) return;
   const nav = e.target.closest('[data-nav]');
   if (nav) { switchScene(nav.dataset.nav); return; }
   const spot = e.target.closest('[data-action]');
@@ -1578,6 +2204,13 @@ function dev_setDay(day) {
   renderClock();
   saveState();
 }
+function dev_showEnding() {
+  const sel = document.getElementById('dev-ending-select');
+  const id = sel.value;
+  if (!id) return alert('请先选择一个结局');
+  document.getElementById('dev-panel').classList.remove('show');
+  triggerEnding(id);
+}
 // 数值滑块联动
 document.addEventListener('input', (e) => {
   const el = e.target;
@@ -1597,29 +2230,307 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ============ 封面主界面 ============
+function showCover() {
+  document.getElementById('cover-screen').classList.add('show');
+  // 载入按钮：有存档才可用
+  const loadBtn = document.getElementById('cover-load-btn');
+  const hasSave = !!localStorage.getItem(SAVE_KEY);
+  loadBtn.disabled = !hasSave;
+  loadBtn.textContent = hasSave ? '载入游戏' : '（无存档）';
+  // 隐藏 HUD/回家按钮，避免封面上乱显示
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('home-btn').style.display = 'none';
+}
+function hideCover() {
+  document.getElementById('cover-screen').classList.remove('show');
+  document.getElementById('hud').style.display = '';
+  document.getElementById('home-btn').style.display = '';
+}
+function coverNewGame() {
+  // 新游戏 = 清存档 + 触发取名界面
+  if (localStorage.getItem(SAVE_KEY)) {
+    if (!confirm('已有存档会被覆盖，确定开始新游戏？')) return;
+  }
+  localStorage.removeItem(SAVE_KEY);
+  // 重置 state 到默认
+  state = structuredClone(DEFAULT_STATE);
+  hideCover();
+  showIntro();
+}
+function coverLoad() {
+  hideCover();
+  // 触发正常 init 流程
+  bootGame();
+}
+function goToCover() {
+  showConfirm('是否回到主界面？', () => {
+    saveState();
+    showCover();
+  });
+}
+
+// ============ 2048 迷你游戏 ============
+const G2048_KEY = 'bf-sim-2048-best';
+let g2048 = { grid: null, score: 0, best: 0, active: false, reached2048: false };
+
+function initG2048Board() {
+  const board = document.getElementById('g2048-board');
+  board.innerHTML = '';
+  for (let i = 0; i < 16; i++) {
+    const c = document.createElement('div');
+    c.className = 'g2048-cell';
+    c.dataset.v = '0';
+    board.appendChild(c);
+  }
+}
+function renderG2048() {
+  const cells = document.querySelectorAll('#g2048-board .g2048-cell');
+  for (let r = 0; r < 4; r++) {
+    for (let col = 0; col < 4; col++) {
+      const v = g2048.grid[r][col];
+      const cell = cells[r*4+col];
+      cell.textContent = v === 0 ? '' : v;
+      cell.dataset.v = v;
+    }
+  }
+  document.getElementById('g2048-score').textContent = g2048.score;
+  document.getElementById('g2048-best').textContent = g2048.best;
+}
+function addRandomTile() {
+  const empty = [];
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (g2048.grid[r][c] === 0) empty.push([r,c]);
+  if (empty.length === 0) return false;
+  const [r,c] = empty[Math.floor(Math.random() * empty.length)];
+  g2048.grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+  return true;
+}
+function new2048() {
+  g2048.grid = Array.from({length:4}, () => [0,0,0,0]);
+  g2048.score = 0;
+  g2048.reached2048 = false;
+  addRandomTile();
+  addRandomTile();
+  renderG2048();
+}
+function open2048() {
+  initG2048Board();
+  g2048.best = parseInt(localStorage.getItem(G2048_KEY) || '0', 10);
+  new2048();
+  document.getElementById('mini-2048').classList.add('show');
+  g2048.active = true;
+  // 彩蛋游戏机：只在未触发过时出现
+  setupConsoleEgg();
+}
+
+// ============ 彩蛋任天堂游戏机 ============
+let consoleClicks = 0;
+function setupConsoleEgg() {
+  const egg = document.getElementById('g2048-console');
+  consoleClicks = 0;
+  if (state.switchEggShown) {
+    egg.style.display = 'none';
+    return;
+  }
+  egg.style.display = '';
+  // 随机初始位置
+  moveConsoleEgg();
+  egg.onclick = onConsoleClick;
+}
+const EGG_POS = ['pos-tl','pos-tr','pos-bl','pos-br'];
+function moveConsoleEgg() {
+  const egg = document.getElementById('g2048-console');
+  const cur = EGG_POS.find(p => egg.classList.contains(p));
+  const options = EGG_POS.filter(p => p !== cur);
+  const next = options[Math.floor(Math.random() * options.length)];
+  EGG_POS.forEach(p => egg.classList.remove(p));
+  egg.classList.add(next);
+}
+async function onConsoleClick(e) {
+  e.stopPropagation();
+  consoleClicks++;
+  if (consoleClicks < 3) {
+    moveConsoleEgg();
+    return;
+  }
+  // 第 3 次点击：触发对白 + 选择
+  const egg = document.getElementById('g2048-console');
+  egg.style.display = 'none';
+  state.switchEggShown = true;
+  saveState();
+  // 关闭 2048 面板，进入 CG 或对白
+  document.getElementById('mini-2048').classList.remove('show');
+  g2048.active = false;
+  // 弹对白 → 用 CG 系统承载
+  cgShow('assets/cg_coop_game.png');
+  // 先用一张接近场景的图作背景（就先用双人玩CG,还没选就先显示）
+  await cgSay('@bf', '……说起来，其实任天堂也挺好玩的。');
+  await cgSay('@bf', '要不要，我们一起玩会儿？');
+  const pick = await cgChoose(['好呀！一起玩～', '不了，我看你玩'], 0); // 不自动
+  changeStat('understanding', +1);
+  changeStat('love', +10);
+  if (pick === 0) {
+    // 一起玩
+    state.coopGameDone = true;
+    changeStat('passion', +10);
+    await cgSay('@bf', '好耶！（他兴奋地凑过来。）');
+    await cgSay('旁白', '你们头挨着头，肩靠着肩，一起看着屏幕。');
+    await cgSay('@bf', '你手别抖……啊被我打到了！');
+    await cgSay('旁白', '很久没这样笑过了。');
+  } else {
+    await cgSay('@bf', '……那我一个人玩会儿。');
+    await cgSay('旁白', '他撇撇嘴，装作不在意的样子。');
+  }
+  cgHide();
+  saveState();
+}
+function close2048() {
+  document.getElementById('mini-2048').classList.remove('show');
+  g2048.active = false;
+  // 结算：分数 × 0.1 心动，压力 -3
+  const bonusLove = Math.min(30, Math.floor(g2048.score * 0.1));
+  if (bonusLove > 0) changeStat('love', bonusLove);
+  changeStat('stress', -3);
+  changeStat('passion', +2);
+  // 达到 2048 彩蛋
+  if (g2048.reached2048) {
+    setTimeout(() => showDialog('@bf', '你居然通关了？太厉害了……我请你吃饭吧。'), 300);
+    changeStat('love', +15);
+  } else if (g2048.score >= 500) {
+    setTimeout(() => showDialog('@bf', `${g2048.score} 分？打得不错嘛！`), 300);
+  } else {
+    setTimeout(() => showDialog('@bf', '嗯……也算陪你玩了一会儿～'), 300);
+  }
+  // 进入坐姿+推进时间
+  state.atComputer = true;
+  applyComputerPose();
+  advanceTime();
+  saveState();
+}
+
+// 移动逻辑：对每一行/列做 slide + merge
+function slideRow(row) {
+  const arr = row.filter(v => v !== 0);
+  let scoreGain = 0;
+  const merged = [];
+  for (let i = 0; i < arr.length; i++) {
+    if (i + 1 < arr.length && arr[i] === arr[i+1]) {
+      const v = arr[i] * 2;
+      merged.push(v);
+      scoreGain += v;
+      if (v === 2048) g2048.reached2048 = true;
+      i++;
+    } else {
+      merged.push(arr[i]);
+    }
+  }
+  while (merged.length < 4) merged.push(0);
+  return { row: merged, scoreGain };
+}
+function move2048(dir) {
+  if (!g2048.active) return;
+  const before = JSON.stringify(g2048.grid);
+  let scoreGain = 0;
+  const g = g2048.grid;
+  if (dir === 'L') {
+    for (let r = 0; r < 4; r++) { const {row, scoreGain: s} = slideRow(g[r]); g[r] = row; scoreGain += s; }
+  } else if (dir === 'R') {
+    for (let r = 0; r < 4; r++) { const {row, scoreGain: s} = slideRow([...g[r]].reverse()); g[r] = row.reverse(); scoreGain += s; }
+  } else if (dir === 'U') {
+    for (let c = 0; c < 4; c++) {
+      const col = [g[0][c],g[1][c],g[2][c],g[3][c]];
+      const {row, scoreGain: s} = slideRow(col);
+      for (let r = 0; r < 4; r++) g[r][c] = row[r];
+      scoreGain += s;
+    }
+  } else if (dir === 'D') {
+    for (let c = 0; c < 4; c++) {
+      const col = [g[3][c],g[2][c],g[1][c],g[0][c]];
+      const {row, scoreGain: s} = slideRow(col);
+      for (let r = 0; r < 4; r++) g[3-r][c] = row[r];
+      scoreGain += s;
+    }
+  }
+  const after = JSON.stringify(g2048.grid);
+  if (before !== after) {
+    g2048.score += scoreGain;
+    if (g2048.score > g2048.best) {
+      g2048.best = g2048.score;
+      localStorage.setItem(G2048_KEY, g2048.best);
+    }
+    addRandomTile();
+    renderG2048();
+  }
+}
+
+// 键盘 & 滑动
+document.addEventListener('keydown', (e) => {
+  if (!g2048.active) return;
+  const map = { ArrowLeft:'L', ArrowRight:'R', ArrowUp:'U', ArrowDown:'D',
+                a:'L', d:'R', w:'U', s:'D', A:'L', D:'R', W:'U', S:'D' };
+  if (map[e.key]) { e.preventDefault(); move2048(map[e.key]); }
+});
+let g2048Touch = null;
+document.getElementById('g2048-board') && (() => {
+  const board = document.getElementById('g2048-board');
+  board.addEventListener('touchstart', (e) => {
+    if (!g2048.active) return;
+    g2048Touch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, { passive: true });
+  board.addEventListener('touchend', (e) => {
+    if (!g2048.active || !g2048Touch) return;
+    const dx = e.changedTouches[0].clientX - g2048Touch.x;
+    const dy = e.changedTouches[0].clientY - g2048Touch.y;
+    if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+    if (Math.abs(dx) > Math.abs(dy)) move2048(dx > 0 ? 'R' : 'L');
+    else move2048(dy > 0 ? 'D' : 'U');
+    g2048Touch = null;
+  });
+})();
+
+// ============ 通用确认弹窗 ============
+function showConfirm(text, onYes, onNo) {
+  document.getElementById('confirm-text').textContent = text;
+  const yes = document.getElementById('confirm-yes');
+  const no  = document.getElementById('confirm-no');
+  const modal = document.getElementById('confirm-modal');
+  const close = () => modal.classList.remove('show');
+  yes.onclick = () => { close(); if (onYes) onYes(); };
+  no.onclick  = () => { close(); if (onNo) onNo(); };
+  modal.classList.add('show');
+}
+
 // ============ 启动 ============
 function init() {
-  // 首次进入：显示取名界面
+  // 有存档 → 显示封面（让玩家选新游戏还是载入）
+  // 无存档 → 也显示封面（新游戏或"载入"灰显）
+  showCover();
+  renderStats();
+  renderClock();
+  setInterval(renderClock, 1000 * 15);
+}
+function bootGame() {
+  // 首次进入（无 heroName）：显示取名界面
   if (!state.heroName) {
     showIntro();
-    renderStats();
-    renderClock();
-    setInterval(renderClock, 1000 * 15);
     return;
   }
   // 从存档恢复场景
   switchScene(state.scene);
   applyLights();
+  applyDayNight();
   applyComputerPose();
   applyHeroScale();
-  if (state.badEnd) {
-    document.getElementById('bad-end').classList.add('show');
+  // 若已进入结局，显示结局屏
+  if (state.ended && state.endingId) {
+    showEnding(state.endingId);
+  } else if (state.badEnd) {
+    showEnding('fat');
   }
   renderStats();
   renderClock();
-  setInterval(renderClock, 1000 * 15); // 每 15 秒更新
   // 初始欢迎
-  setTimeout(() => showDialog('@bf', `你回来啦～ 好想你。`), 400);
+  setTimeout(() => showDialog('@bf', '你回来啦～ 好想你。'), 400);
 }
 
 // 让各场景用生成好的背景图
