@@ -127,51 +127,64 @@
   }
   .scene.active { display: block; }
 
-  /* 场景切换箭头 */
+  /* 场景切换箭头（金黄像素风） */
   .nav-arrow {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6%;
+    width: 5.5%;
     aspect-ratio: 1 / 1;
-    background: rgba(0,0,0,0.35);
-    border: 2px solid rgba(255,255,255,0.7);
-    color: #fff;
-    font-size: 2.4vw;
-    font-weight: bold;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: url('assets/arrow.png') center/contain no-repeat;
+    color: transparent;         /* 隐藏原来的三角字符 */
+    border: none;
     cursor: pointer;
     z-index: 20;
-    transition: transform 0.15s, background 0.15s;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.45));
+    transition: filter 0.15s, transform 0.15s;
   }
-  .nav-arrow:hover { background: rgba(0,0,0,0.55); }
-  .nav-arrow:active { transform: scale(0.95); }
-  .nav-arrow.left  { left: 1.2%;  top: 50%; transform: translateY(-50%); }
-  .nav-arrow.right { right: 1.2%; top: 50%; transform: translateY(-50%); }
-  .nav-arrow.right-top    { right: 1.2%; top: 32%; }
-  .nav-arrow.right-bottom { right: 1.2%; top: 68%; }
-  .nav-arrow.up    { left: 8%;    top: 12%; }
-  .nav-arrow.down  { left: 3%;    bottom: 8%; }
-  .nav-arrow.left:hover  { transform: translateY(-50%) scale(1.08); }
-  .nav-arrow.right:hover { transform: translateY(-50%) scale(1.08); }
+  .nav-arrow:hover  {
+    filter: drop-shadow(0 0 8px rgba(255,220,80,0.9)) drop-shadow(2px 3px 3px rgba(0,0,0,0.4));
+  }
+  .nav-arrow:active { filter: brightness(0.85); }
+  /* 四个方向：用旋转复用同一张 arrow.png（原图默认朝右 ▶） */
+  .nav-arrow.left        { left: 1.2%;  top: 50%; transform: translateY(-50%) rotate(180deg); }
+  .nav-arrow.right       { right: 1.2%; top: 50%; transform: translateY(-50%); }
+  .nav-arrow.right-top   { right: 1.2%; top: 32%; }
+  .nav-arrow.right-bottom{ right: 1.2%; top: 68%; }
+  .nav-arrow.up          { left: 8%;    top: 12%; transform: rotate(-90deg); }
+  .nav-arrow.down        { left: 3%;    bottom: 8%; transform: rotate(90deg); }
+  .nav-arrow.left:hover  { transform: translateY(-50%) rotate(180deg) scale(1.12); }
+  .nav-arrow.right:hover { transform: translateY(-50%) scale(1.12); }
   .nav-arrow.right-top:hover,
-  .nav-arrow.right-bottom:hover,
-  .nav-arrow.up:hover,
-  .nav-arrow.down:hover  { transform: scale(1.08); }
+  .nav-arrow.right-bottom:hover { transform: scale(1.12); }
+  .nav-arrow.up:hover    { transform: rotate(-90deg) scale(1.12); }
+  .nav-arrow.down:hover  { transform: rotate(90deg) scale(1.12); }
+
+  /* 悬停标签：显示"去哪里" */
   .nav-arrow .label {
     position: absolute;
-    top: 105%; left: 50%; transform: translateX(-50%);
-    font-size: 0.75vw;
+    top: 105%;
+    left: 50%;
+    transform: translateX(-50%) rotate(0deg);  /* 抵消父级旋转 */
+    font-size: 0.85vw;
     color: #fff;
-    background: rgba(0,0,0,0.55);
-    padding: 0.15vw 0.5vw;
+    background: rgba(60,30,10,0.85);
+    padding: 0.25vw 0.7vw;
     border-radius: 3px;
     white-space: nowrap;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+    border: 1px solid rgba(255,220,120,0.5);
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
   }
+  .nav-arrow:hover .label { opacity: 1; }
+  /* 旋转过的箭头，标签需要反向旋转到正常朝向 */
+  .nav-arrow.left  .label { transform: translateX(-50%) rotate(-180deg) translateY(-2vw); }
+  .nav-arrow.up    .label { transform: translateX(-50%) rotate(90deg) translateY(-2vw); }
+  .nav-arrow.down  .label { transform: translateX(-50%) rotate(-90deg) translateY(-2vw); }
   .scene-label {
     position: absolute;
     top: 2%;
@@ -195,6 +208,10 @@
     filter: drop-shadow(0 4px 6px rgba(0,0,0,0.18));
     z-index: 8;
   }
+
+  /* 窗户白天/夜晚独立尺寸位置 */
+  #prop-window[data-state="day"]   { right: 20%; top: 32%; width: 32%; }
+  #prop-window[data-state="night"] { right: 28%; top: 34%; width: 20%; }
 
   /* 房间灯光暗覆盖层（关灯效果） */
   .light-overlay {
@@ -1089,9 +1106,8 @@
     <!-- 客厅场景（起点） -->
     <div class="scene active" id="scene-living" data-name="客厅">
       <div class="scene-label">客厅</div>
-      <!-- 窗户 sprite（昼夜切换） -->
-      <img class="prop" id="prop-window" src="assets/window_day.png" alt=""
-           style="right:20%; top:32%; width:32%;" />
+      <!-- 窗户 sprite（昼夜切换：尺寸位置独立） -->
+      <img class="prop" id="prop-window" src="assets/window_day.png" alt="" data-state="day" />
       <!-- 吊灯 sprite -->
       <img class="prop" data-lamp src="assets/pendant_lamp.png" alt=""
            style="left:40%; top:2%; width:20%;" />
@@ -1131,11 +1147,11 @@
            src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
            style="left: 50%; height: 62%;" />
       <!-- 上楼去卧室 -->
-      <div class="nav-arrow up" data-nav="bedroom">▲<span class="label">卧室</span></div>
+      <div class="nav-arrow up" data-nav="bedroom"><span class="label">去卧室</span></div>
       <!-- 右上：外出 -->
-      <div class="nav-arrow right-top" data-action="goOut">▶<span class="label">外出</span></div>
+      <div class="nav-arrow right-top" data-action="goOut"><span class="label">外出</span></div>
       <!-- 右下：厕所 -->
-      <div class="nav-arrow right-bottom" data-nav="bathroom">▶<span class="label">厕所</span></div>
+      <div class="nav-arrow right-bottom" data-nav="bathroom"><span class="label">去厕所</span></div>
       <!-- 关灯覆盖层 -->
       <div class="light-overlay"></div>
     </div>
@@ -1171,7 +1187,7 @@
            src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
            style="left: 78%; height: 52%; bottom: 6%;" />
       <!-- 返回客厅 -->
-      <div class="nav-arrow left" data-nav="living">◀<span class="label">客厅</span></div>
+      <div class="nav-arrow left" data-nav="living"><span class="label">回客厅</span></div>
     </div>
 
     <!-- 卧室场景（夹层） -->
@@ -1204,7 +1220,7 @@
            src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
            style="left: 82%; height: 52%;" />
       <!-- 下楼回客厅 -->
-      <div class="nav-arrow down" data-nav="living">▼<span class="label">下楼</span></div>
+      <div class="nav-arrow down" data-nav="living"><span class="label">下楼</span></div>
     </div>
   </div>
 
@@ -1532,7 +1548,10 @@ function applyDayNight() {
   const isDay = mins >= 6*60 && mins < 18*60;
   const isNight = isNightMode();
   const win = document.getElementById('prop-window');
-  if (win) win.src = isDay ? 'assets/window_day.png' : 'assets/window_night.png';
+  if (win) {
+    win.src = isDay ? 'assets/window_day.png' : 'assets/window_night.png';
+    win.dataset.state = isDay ? 'day' : 'night';
+  }
   // 卧室背景切换：白天空床 / 夜晚男主睡床
   const bedScene = document.getElementById('scene-bedroom');
   if (bedScene) {
@@ -1556,11 +1575,11 @@ function applyDayNight() {
     applyLights();
     saveState();
   }
-  // 深夜：客厅+卧室的站立男主都隐藏（他已经在床背景里睡着了）
+  // 夜晚：客厅+卧室的站立男主全部隐藏（他已在夜晚卧室背景里睡着）
   const heroLiving = document.getElementById('hero-living');
   const heroBedroom = document.getElementById('hero-bedroom');
   if (heroLiving && heroBedroom) {
-    if (isNight && !state.atComputer) {
+    if (isNight) {
       heroLiving.style.display = 'none';
       heroBedroom.style.display = 'none';
     } else if (!state.atComputer) {
