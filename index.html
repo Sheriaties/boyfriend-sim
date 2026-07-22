@@ -1185,15 +1185,6 @@
            style="left:46%; top:14%; width:10%; height:14%;">
         <span class="hotspot-label">💡 吊灯</span>
       </div>
-      <!-- 空床 sprite（白天） -->
-      <img class="prop" id="prop-bed-empty" src="assets/bed_empty.png" alt=""
-           style="left:20%; bottom:14%; width:60%;" />
-      <!-- 睡觉床 sprite（夜晚） -->
-      <img class="prop" id="prop-bed-sleeping" src="assets/bed_sleeping.png" alt=""
-           style="left:20%; bottom:14%; width:60%; display:none; z-index:9;" />
-      <!-- 兔子玩偶（叠在床上） -->
-      <img class="prop" id="prop-bunny" src="" alt=""
-           style="left:38%; top:52%; width:5%; display:none;" />
       <!-- 大床热区 -->
       <div class="hotspot" data-action="bed"
            style="left:22%; top:56%; width:56%; height:34%;">
@@ -1212,9 +1203,6 @@
       <img class="character" id="hero-bedroom"
            src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
            style="left: 82%; height: 52%;" />
-      <!-- 夜晚男友躺床（旧机制备用，已合并进 bed_sleeping） -->
-      <img class="prop" id="prop-hero-sleeping" src="assets/characters/hero_bed.png" alt=""
-           style="left:22%; bottom:16%; width:50%; display:none; z-index:11;" />
       <!-- 下楼回客厅 -->
       <div class="nav-arrow down" data-nav="living">▼<span class="label">下楼</span></div>
     </div>
@@ -1542,6 +1530,13 @@ function applyDayNight() {
   const isNight = isNightMode();
   const win = document.getElementById('prop-window');
   if (win) win.src = isDay ? 'assets/window_day.png' : 'assets/window_night.png';
+  // 卧室背景切换：白天空床 / 夜晚男主睡床
+  const bedScene = document.getElementById('scene-bedroom');
+  if (bedScene) {
+    bedScene.style.backgroundImage = isNight
+      ? "url('assets/bg_bedroom_night.png')"
+      : "url('assets/bg_bedroom.png')";
+  }
   // 20:00 后自动关客厅+卧室灯（一次）
   if (mins >= 20*60 && !state.autoLightsAdjusted) {
     state.lightsOn.living = false;
@@ -1550,7 +1545,7 @@ function applyDayNight() {
     applyLights();
     saveState();
   }
-  // 白天 6:00 后自动开灯 + 重置标记
+  // 白天 6:00 自动开灯 + 重置
   if (isDay && state.autoLightsAdjusted) {
     state.lightsOn.living = true;
     state.lightsOn.bedroom = true;
@@ -1558,28 +1553,16 @@ function applyDayNight() {
     applyLights();
     saveState();
   }
-  // 深夜：男主自动上二楼床睡觉
+  // 深夜：客厅+卧室的站立男主都隐藏（他已经在床背景里睡着了）
   const heroLiving = document.getElementById('hero-living');
   const heroBedroom = document.getElementById('hero-bedroom');
-  const heroSleeping = document.getElementById('prop-hero-sleeping');
-  const bedEmpty = document.getElementById('prop-bed-empty');
-  const bedSleeping = document.getElementById('prop-bed-sleeping');
-  if (heroLiving && heroBedroom && heroSleeping) {
+  if (heroLiving && heroBedroom) {
     if (isNight && !state.atComputer) {
       heroLiving.style.display = 'none';
       heroBedroom.style.display = 'none';
-      // 床切换到"睡觉版"
-      if (bedEmpty)    bedEmpty.style.display = 'none';
-      if (bedSleeping) bedSleeping.style.display = 'block';
-      heroSleeping.style.display = 'none';  // 用 bedSleeping 综合图替代
-    } else {
-      if (bedEmpty)    bedEmpty.style.display = 'block';
-      if (bedSleeping) bedSleeping.style.display = 'none';
-      heroSleeping.style.display = 'none';
-      if (!state.atComputer) {
-        heroLiving.style.display = '';
-        heroBedroom.style.display = '';
-      }
+    } else if (!state.atComputer) {
+      heroLiving.style.display = '';
+      heroBedroom.style.display = '';
     }
   }
 }
