@@ -211,7 +211,7 @@
 
   /* 窗户白天/夜晚独立尺寸位置 */
   #prop-window[data-state="day"]   { right: 20%; top: 32%; width: 32%; }
-  #prop-window[data-state="night"] { right: 28%; top: 34%; width: 20%; }
+  #prop-window[data-state="night"] { right: 28%; top: 34%; width: 10%; }
 
   /* 房间灯光暗覆盖层（关灯效果） */
   .light-overlay {
@@ -1559,8 +1559,8 @@ function applyDayNight() {
       ? "url('assets/bg_bedroom_night.png')"
       : "url('assets/bg_bedroom.png')";
   }
-  // 20:00 后自动关客厅+卧室灯（一次）
-  if (mins >= 20*60 && !state.autoLightsAdjusted) {
+  // 22:00 进入夜晚 → 同步：关楼上楼下灯 + 男主消失 + 卧室换夜景（三件事同一时间）
+  if (isNight && !state.autoLightsAdjusted) {
     state.lightsOn.living = false;
     state.lightsOn.bedroom = false;
     state.autoLightsAdjusted = true;
