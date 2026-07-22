@@ -1317,6 +1317,7 @@
       <option value="yandere">🔗 病娇囚禁</option>
       <option value="exhausted">💀 虚脱</option>
       <option value="disappeared">👻 男主失踪</option>
+      <option value="gone">💔 出去住揭穿（他早知道）</option>
       <option value="breakup_final">💔 分手（4周）</option>
       <option value="roommate">🛋 室友式同居</option>
       <option value="adversary">⚔️ 对抗路情侣</option>
@@ -1337,6 +1338,7 @@
     <button onclick="advanceTime(24)">⏩ +1 天</button>
     <button onclick="dev_setDay(8)">⏩ 跳到第 8 天（第 2 周）</button>
     <button onclick="state.outCount=(state.outCount||0)+1; saveState(); alert('外出次数: '+state.outCount);">外出次数 +1</button>
+    <button onclick="state.nightOutCount=(state.nightOutCount||0)+1; saveState(); alert('出去住次数: '+state.nightOutCount);">出去住次数 +1</button>
     <button onclick="state.chipCount=(state.chipCount||0)+1; applyHeroScale(); saveState(); alert('薯片次数: '+state.chipCount);">薯片次数 +1</button>
 
     <h4>其他</h4>
@@ -1368,6 +1370,7 @@ const DEFAULT_STATE = {
   atComputer: false,
   chipCount: 0,
   outCount: 0,
+  nightOutCount: 0,
   walkDone: false,
   argueDone: false,
   kissDone: false,
@@ -1593,6 +1596,72 @@ function resetGame() {
   location.reload();
 }
 
+// ============ 一起睡 / 出去住 ============
+function jumpToNextMorning() {
+  const t = state.gameTime;
+  const nextDay = Math.floor(t / (24*60)) + 1;
+  state.gameTime = nextDay * 24 * 60 + 7 * 60;
+  state.sleepPrompted = false;
+  state.autoLightsAdjusted = false;
+  renderClock();
+  applyDayNight();
+  saveState();
+  return nextDay + 1;
+}
+async function sleepTogether() {
+  // 黑屏 CG（没图就纯黑 + 旁白）
+  const overlay = document.getElementById('cg-overlay');
+  const img = document.getElementById('cg-image');
+  img.src = '';
+  img.style.background = '#0a0505';
+  img.style.width = '100%';
+  img.style.height = '100%';
+  overlay.classList.add('show');
+  await cgSay('旁白', '灯灭了。');
+  await cgSay('旁白', '他把你搂进怀里，你能闻到他身上熟悉的味道。');
+  await cgSay('@bf', '……过来一点。');
+  await cgSay('旁白', '呼吸交叠，心跳彼此贴着彼此。');
+  await cgSay('旁白', '你在他怀里睡着了。');
+  // 数值 + 跳日
+  changeStat('love', +8);
+  changeStat('understanding', +8);
+  changeStat('passion', +8);
+  changeStat('stress', -20);
+  const d = jumpToNextMorning();
+  cgHide();
+  img.style.background = '';
+  img.style.width = '';
+  img.style.height = '';
+  setTimeout(() => showDialog('系统', `——第 ${d} 天 07:00——`), 500);
+}
+async function stayOut() {
+  state.nightOutCount = (state.nightOutCount || 0) + 1;
+  const overlay = document.getElementById('cg-overlay');
+  const img = document.getElementById('cg-image');
+  img.src = '';
+  img.style.background = '#0a0810';
+  img.style.width = '100%';
+  img.style.height = '100%';
+  overlay.classList.add('show');
+  await cgSay('旁白', '你悄悄拿起外套和钥匙，走出了家门。');
+  await cgSay('旁白', '街灯下的夜晚很凉。');
+  await cgSay('旁白', '你订了一间小旅馆的房，一个人度过了这一夜。');
+  changeStat('stress', -10);
+  changeStat('love', -3);
+  saveState();
+  const d = jumpToNextMorning();
+  cgHide();
+  img.style.background = '';
+  img.style.width = '';
+  img.style.height = '';
+  // 第 4 次触发 gone 结局
+  if (state.nightOutCount >= 4) {
+    setTimeout(() => triggerEnding('gone'), 800);
+  } else {
+    setTimeout(() => showDialog('系统', `——第 ${d} 天 07:00——`), 500);
+  }
+}
+
 // ============ 结局系统 ============
 const ENDINGS = {
   breakup_now: {
@@ -1649,6 +1718,16 @@ const ENDINGS = {
       '你回到家，桌上有一张纸条：',
       '"对不起，我先离开一段时间。等我状态好了再回来找你。"',
       '然后你听说他退学了，再然后就没有然后了。',
+    ],
+  },
+  gone: {
+    title: '💔 BAD END · 你怎么会觉得能瞒得住他',
+    subtitle: '他早就知道了',
+    body: [
+      '桌上的钥匙下压着一张字条：',
+      '"你不用解释。我知道你这几天都住在哪儿。"',
+      '"我不想在这样的关系里继续消耗你，也消耗自己。祝好。"',
+      '他走得干干净净，连一件衣服都没落下。',
     ],
   },
   breakup_final: {
@@ -1898,41 +1977,26 @@ const INTERACTIONS = {
   bed: (evt) => {
     const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="bed"]');
     if (isNightMode()) {
-      // 夜晚：一起睡 / 再玩会儿
+      // 夜晚：一起睡 / 探索家里 / 出去住
       showMenu(anchor, [
         {
           label: '🌙 一起睡',
+          onClick: () => sleepTogether(),
+        },
+        {
+          label: '🌃 探索家里',
           onClick: () => {
-            showDialog('@bf', '嗯……过来。（他掀开被子给你留了位置。）');
-            // 同居情侣级数值
-            changeStat('love', +8);
-            changeStat('understanding', +8);
-            changeStat('passion', +8);
-            changeStat('stress', -20);
-            // 时间跳到次日 07:00
-            const t = state.gameTime;
-            const nextDay = Math.floor(t / (24*60)) + 1;
-            state.gameTime = nextDay * 24 * 60 + 7 * 60;
-            state.sleepPrompted = false;
-            state.autoLightsAdjusted = false;
-            renderClock();
-            applyDayNight();
-            saveState();
-            setTimeout(() => showDialog('系统', `——第 ${nextDay + 1} 天 07:00——`), 3000);
+            showDialog('系统', '你悄悄退出了卧室。他熟睡的家，安静得只剩你自己的脚步声。');
           }
         },
         {
-          label: '🌃 再玩会儿',
-          onClick: () => {
-            showDialog('系统', '你悄悄退出了卧室，不想吵醒他。');
-          }
+          label: '🚪 出去住',
+          onClick: () => stayOut(),
         },
       ]);
     } else {
-      // 白天：占位
-      showDialog('系统', '要休息一下吗？（占位）');
-      changeStat('understanding', +2);
-      changeStat('stress', -5);
+      // 白天点床
+      showDialog('系统', '我现在还不是很想睡觉。');
     }
   },
   bunny: () => {
