@@ -913,6 +913,179 @@
   }
   .mini-close:hover { background: #d94a80; }
 
+  /* ============ 小鸟音游 ============ */
+  .birdsong-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 260;
+    display: none;
+    flex-direction: column;
+    background: #87ceeb;  /* 天蓝色兜底 */
+    image-rendering: pixelated;
+    animation: fadeInBlack .4s ease;
+  }
+  .birdsong-overlay.show { display: flex; }
+
+  /* 背景图层 */
+  .bs-bg {
+    position: absolute;
+    inset: 0;
+    background: url('assets/birdsong/bg_window.png') center/cover no-repeat;
+  }
+
+  /* 顶部得分条 */
+  .bs-hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 9%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2vw;
+    background: rgba(255,255,255,0.65);
+    backdrop-filter: blur(4px);
+    z-index: 5;
+    border-bottom: 2px solid rgba(255,200,140,0.6);
+  }
+  .bs-score  { font-size: 1.5vw; font-weight: 800; color: #5a3010; letter-spacing:.1em; }
+  .bs-combo  { font-size: 1.2vw; font-weight: 700; color: #c73e73; }
+  .bs-miss   { font-size: 1.1vw; color: #888; }
+  .bs-close  {
+    background: #fff; color: #c73e73; border: 2px solid #c73e73;
+    border-radius: 50%; width: 2.4vw; height: 2.4vw;
+    font-size: 1.2vw; font-weight: 900; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .bs-close:hover { background: #ffe0ec; }
+
+  /* 小鸟区（左上区，树枝上） */
+  .bs-bird-area {
+    position: absolute;
+    left: 4%; top: 15%;
+    width: 28%;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .bs-bird {
+    width: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+    transition: transform .1s;
+  }
+  /* 节拍律动 */
+  @keyframes bsBeat { 0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-6px) rotate(-3deg)} }
+  .bs-beat { animation: bsBeat .4s ease-in-out infinite; }
+  @keyframes bsJump { 0%{transform:scale(1)}40%{transform:scale(1.18) translateY(-8px)}100%{transform:scale(1)} }
+  .bs-jump { animation: bsJump .3s ease-out; }
+
+  /* 音符飘出 */
+  .bs-note {
+    position: absolute;
+    font-size: 1.8vw;
+    pointer-events: none;
+    animation: bsNoteFloat 1s ease-out forwards;
+    z-index: 6;
+    color: #ff7eb3;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  @keyframes bsNoteFloat {
+    0%  { opacity:0; transform: translate(0,0) scale(0.7); }
+    20% { opacity:1; }
+    100%{ opacity:0; transform: translate(var(--dx,3vw), -5vw) scale(1.1); }
+  }
+
+  /* 女主区（右下） */
+  .bs-girl-area {
+    position: absolute;
+    right: 8%; bottom: 4%;
+    width: 20%;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .bs-girl {
+    width: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+    transition: transform .1s;
+  }
+  @keyframes bsGirlBeat { 0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)} }
+  .bs-girl-beat { animation: bsGirlBeat .4s ease-in-out infinite; }
+
+  /* 判定圈（中央偏右） */
+  .bs-hit-ring {
+    position: absolute;
+    left: 50%; top: 40%;
+    transform: translate(-50%,-50%);
+    width: 12vw; height: 12vw;
+    border-radius: 50%;
+    border: 4px solid rgba(255,200,100,0.5);
+    background: rgba(255,255,255,0.15);
+    z-index: 5;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .bs-hit-ring.active { display: flex; }
+  .bs-hit-ring:hover { background: rgba(255,255,200,0.35); border-color: rgba(255,220,80,.9); }
+
+  /* 倒计时圆环 SVG */
+  .bs-timer-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .bs-timer-svg .track { fill:none; stroke:rgba(255,255,255,.3); stroke-width:5; }
+  .bs-timer-svg .bar   { fill:none; stroke:#ffd066; stroke-width:5; stroke-linecap:round;
+                          transform:rotate(-90deg); transform-origin:center; transition:stroke-dashoffset linear; }
+  .bs-hit-label {
+    font-size: 1.4vw; font-weight: 900; color: #fff; text-align: center;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5); z-index: 1;
+    pointer-events: none;
+  }
+
+  /* 判定浮字 */
+  .bs-judge-text {
+    position: absolute;
+    left: 50%; top: 35%;
+    transform: translate(-50%,-50%);
+    font-size: 2.5vw; font-weight: 900;
+    pointer-events: none;
+    animation: bsJudge .8s ease-out forwards;
+    z-index: 7;
+    text-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  }
+  @keyframes bsJudge {
+    0%  { opacity:0; transform:translate(-50%,-50%) scale(0.6); }
+    20% { opacity:1; transform:translate(-50%,-65%) scale(1.15); }
+    100%{ opacity:0; transform:translate(-50%,-85%) scale(0.9); }
+  }
+
+  /* 结果面板 */
+  .bs-result {
+    position: absolute; inset:0; background:rgba(0,0,0,0.7);
+    z-index:8; display:none; flex-direction:column; align-items:center; justify-content:center;
+    animation: fadeInBlack .5s ease;
+  }
+  .bs-result.show { display:flex; }
+  .bs-result-box {
+    background:#fff8ea; border:4px solid #3a2a1a; border-radius:8px;
+    padding:2vw 3vw; text-align:center;
+    box-shadow: inset 0 0 0 2px #f5e0b0, 6px 6px 0 rgba(0,0,0,.35);
+    min-width: 36vw;
+  }
+  .bs-result-title { font-size:2.5vw; font-weight:900; color:#c73e73; margin-bottom:.8vw; }
+  .bs-result-stats { font-size:1.1vw; color:#5a3010; line-height:2; margin-bottom:1.5vw; }
+  .bs-result-btn {
+    background:#c73e73; color:#fff; border:3px solid #6a1a3a;
+    padding:.7vw 2vw; font-size:1.1vw; font-weight:700; letter-spacing:.1em;
+    cursor:pointer; border-radius:2px; box-shadow:4px 4px 0 #4a1020; font-family:inherit;
+  }
+  .bs-result-btn:hover { background:#d94a80; transform:translate(-2px,-2px); box-shadow:6px 6px 0 #4a1020; }
+
   /* ============ CG 播放器 ============ */
   .cg-overlay {
     position: absolute;
@@ -1143,6 +1316,11 @@
       <div class="scene-label">客厅</div>
       <!-- 窗户 sprite（昼夜切换：尺寸位置独立） -->
       <img class="prop" id="prop-window" src="assets/window_day.png" alt="" data-state="day" />
+      <!-- 窗户热区（白天可点） -->
+      <div class="hotspot" id="window-hotspot" data-action="window"
+           style="right:21%; top:32%; width:14%; height:36%;">
+        <span class="hotspot-label">🪟 看风景</span>
+      </div>
       <!-- 吊灯 sprite -->
       <img class="prop" data-lamp src="assets/pendant_lamp.png" alt=""
            style="left:40%; top:2%; width:20%;" />
@@ -1298,6 +1476,43 @@
   <!-- 回封面按钮 -->
   <button id="home-btn" title="回到封面" onclick="goToCover()">🏠</button>
 
+  <!-- 小鸟接唱音游 -->
+  <div id="birdsong-overlay" class="birdsong-overlay">
+    <div class="bs-bg"></div>
+    <!-- HUD -->
+    <div class="bs-hud">
+      <span class="bs-score">♪ 得分 <b id="bs-score-num">0</b></span>
+      <span class="bs-combo" id="bs-combo-label"></span>
+      <span class="bs-miss" id="bs-miss-label">❤ ❤ ❤</span>
+      <button class="bs-close" onclick="closeBirdsong()">×</button>
+    </div>
+    <!-- 小鸟区 -->
+    <div class="bs-bird-area">
+      <img class="bs-bird" id="bs-bird" src="assets/birdsong/bird_idle.png" alt="" />
+    </div>
+    <!-- 女主区 -->
+    <div class="bs-girl-area">
+      <img class="bs-girl" id="bs-girl" src="assets/birdsong/girl_idle_qpx.png" alt="" />
+    </div>
+    <!-- 判定圈 -->
+    <div class="bs-hit-ring" id="bs-hit-ring" onclick="bsHit()">
+      <svg class="bs-timer-svg" id="bs-timer-svg" viewBox="0 0 100 100">
+        <circle class="track" cx="50" cy="50" r="44"></circle>
+        <circle class="bar" id="bs-timer-bar" cx="50" cy="50" r="44"
+                stroke-dasharray="276.5" stroke-dashoffset="0"></circle>
+      </svg>
+      <span class="bs-hit-label" id="bs-hit-label">♪</span>
+    </div>
+    <!-- 结果面板 -->
+    <div class="bs-result" id="bs-result">
+      <div class="bs-result-box">
+        <div class="bs-result-title" id="bs-result-title">🎵 演唱结束</div>
+        <div class="bs-result-stats" id="bs-result-stats"></div>
+        <button class="bs-result-btn" onclick="closeBirdsong()">回到家里</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 通用确认弹窗 -->
   <div id="confirm-modal" class="confirm-modal">
     <div class="confirm-box">
@@ -1410,7 +1625,7 @@
 <script>
 // ============ 游戏状态 ============
 const DEFAULT_STATE = {
-  stats: { love: 20, passion: 10, understanding: 20, stress: 15 },
+  stats: { love: 40, passion: 30, understanding: 0, stress: 40 },
   scene: 'living',
   lightsOn: { living: true, bedroom: true, bathroom: true },   // 每场景独立
   autoLightsAdjusted: false,                    // 夜晚自动关灯是否已执行
@@ -2079,6 +2294,14 @@ const INTERACTIONS = {
     changeStat('love', +2);
     changeStat('stress', -2);
   },
+  window: () => {
+    // 白天可以看风景/和小鸟唱歌
+    if (!isNightMode() && !state.heroAsleep) {
+      openWindowGame();
+    } else {
+      showDialog('系统', '窗外很暗，什么都看不清。');
+    }
+  },
   leftExit: () => { /* deprecated, kept for legacy */ },
   goOut: (evt) => {
     // 夜晚(男主睡着):外出=直接出去住
@@ -2167,7 +2390,7 @@ const INTERACTIONS = {
 
 // ============ 事件绑定 ============
 // 哪些 action 不推进时间（弹菜单/切换姿势本身/摸玩偶）
-const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer','goOut','bed','bunny','penguin','chip']);
+const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer','goOut','bed','bunny','penguin','chip','window']);
 // 男主睡着时被禁用的 action（需要他在场的日常互动）
 const NEEDS_HERO_ACTIONS = new Set(['sofa','chip']);
 const HERO_ASLEEP_PLACEHOLDER = {
@@ -2462,6 +2685,229 @@ document.addEventListener('keydown', (e) => {
     toggleDevPanel();
   }
 });
+
+// ============ 小鸟接唱音游 ============
+const BS = {
+  score: 0, combo: 0, miss: 0, maxMiss: 3,
+  bpm: 90,          // 起始BPM
+  beatMs: 0,        // 每拍毫秒
+  phase: 'idle',    // idle | bird_sing | wait_player | result
+  beatCount: 0,
+  patternLen: 3,    // 小鸟唱几拍
+  waitTimer: null,
+  beatTimer: null,
+  notesFired: 0,
+  perfect: 0, good: 0, missCount: 0,
+  audioCtx: null,
+};
+const BS_NOTES = [523.25, 659.25, 783.99, 880]; // do mi sol la
+
+function bsAudio() {
+  if (!BS.audioCtx) BS.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return BS.audioCtx;
+}
+function bsBeep(freq, dur=0.12, vol=0.18, type='sine') {
+  try {
+    const ctx = bsAudio();
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+    o.start(); o.stop(ctx.currentTime+dur);
+  } catch(e){}
+}
+
+function openBirdsong() {
+  document.getElementById('birdsong-overlay').classList.add('show');
+  BS.score=0; BS.combo=0; BS.miss=0; BS.perfect=0; BS.good=0; BS.missCount=0;
+  BS.bpm=90; BS.beatMs=60000/BS.bpm; BS.patternLen=3; BS.notesFired=0;
+  document.getElementById('bs-result').classList.remove('show');
+  bsUpdateHud();
+  setBird('idle'); setGirl('idle');
+  setTimeout(()=> bsStartRound(), 800);
+}
+function closeBirdsong() {
+  document.getElementById('birdsong-overlay').classList.remove('show');
+  clearTimeout(BS.waitTimer); clearTimeout(BS.beatTimer);
+  BS.phase = 'idle';
+  setBird('idle'); setGirl('idle');
+  bsStopBeat();
+  // 结算数值
+  const bonus = Math.floor(BS.score * 0.08);
+  if (bonus > 0) {
+    changeStat('love', Math.min(bonus, 25));
+    changeStat('stress', -Math.min(Math.floor(bonus/2), 12));
+    if (bonus >= 15) changeStat('understanding', +3);
+  }
+  advanceTime(3);
+}
+
+// 设置 sprite
+function setBird(state) {
+  const map = {idle:'bird_idle',sing:'bird_sing',happy:'bird_happy',confused:'bird_confused'};
+  document.getElementById('bs-bird').src = `assets/birdsong/${map[state]||'bird_idle'}.png`;
+}
+function setGirl(state) {
+  const map = {idle:'girl_idle_qpx',sing:'girl_sing_qpx',happy:'girl_happy_qpx'};
+  document.getElementById('bs-girl').src = `assets/birdsong/${map[state]||'girl_idle_qpx'}.png`;
+}
+
+// 节拍律动
+let bsBeatInterval = null;
+function bsStartBeat() {
+  bsStopBeat();
+  bsBeatInterval = setInterval(()=>{
+    const bird = document.getElementById('bs-bird');
+    const girl = document.getElementById('bs-girl');
+    bird.classList.remove('bs-beat'); void bird.offsetWidth; bird.classList.add('bs-beat');
+    girl.classList.remove('bs-girl-beat'); void girl.offsetWidth; girl.classList.add('bs-girl-beat');
+  }, BS.beatMs);
+}
+function bsStopBeat() { clearInterval(bsBeatInterval); }
+
+// 飘音符
+function bsSpawnNote() {
+  const ring = document.getElementById('bs-hit-ring');
+  const bArea = document.querySelector('.bs-bird-area');
+  const n = document.createElement('div');
+  n.className = 'bs-note';
+  n.textContent = ['♪','♫','♩','♬'][Math.floor(Math.random()*4)];
+  n.style.left = (bArea.offsetLeft + bArea.offsetWidth * 0.6) + 'px';
+  n.style.top  = (bArea.offsetTop  + bArea.offsetHeight * 0.2) + 'px';
+  n.style.setProperty('--dx', (Math.random()*4+2)+'vw');
+  document.getElementById('birdsong-overlay').appendChild(n);
+  setTimeout(()=>n.remove(), 1000);
+}
+
+// 一轮：小鸟唱 patternLen 拍，然后等玩家
+function bsStartRound() {
+  if (BS.miss >= BS.maxMiss) { bsShowResult(); return; }
+  BS.phase = 'bird_sing'; BS.notesFired = 0;
+  document.getElementById('bs-hit-ring').classList.remove('active');
+  setBird('sing'); setGirl('idle');
+  bsStartBeat();
+  bsSingBeat();
+}
+function bsSingBeat() {
+  if (BS.notesFired >= BS.patternLen) {
+    // 唱完，等玩家
+    setBird('confused'); setGirl('idle');
+    BS.phase = 'wait_player';
+    bsShowHitRing();
+    return;
+  }
+  const freq = BS_NOTES[BS.notesFired % BS_NOTES.length];
+  bsBeep(freq, 0.15, 0.2);
+  bsSpawnNote();
+  BS.notesFired++;
+  BS.beatTimer = setTimeout(bsSingBeat, BS.beatMs);
+}
+
+// 显示判定圈+倒计时
+function bsShowHitRing() {
+  const ring = document.getElementById('bs-hit-ring');
+  const bar  = document.getElementById('bs-timer-bar');
+  const label = document.getElementById('bs-hit-label');
+  ring.classList.add('active');
+  label.textContent = '♪ 接唱！';
+  // 倒计时 = 2拍
+  const dur = BS.beatMs * 2;
+  bar.style.transition = 'none'; bar.style.strokeDashoffset = '0';
+  void bar.offsetWidth;
+  bar.style.transition = `stroke-dashoffset ${dur}ms linear`;
+  bar.style.strokeDashoffset = '276.5';
+  BS.waitTimer = setTimeout(()=> bsMiss(), dur);
+}
+
+// 玩家点击判定
+function bsHit() {
+  if (BS.phase !== 'wait_player') return;
+  clearTimeout(BS.waitTimer);
+  BS.phase = 'judging';
+  document.getElementById('bs-hit-ring').classList.remove('active');
+  // 判定：基于倒计时剩余（简化：只要点了就 Perfect/Good，不计精准时机）
+  const bar = document.getElementById('bs-timer-bar');
+  const remain = parseFloat(bar.style.strokeDashoffset || '0');
+  const ratio = remain / 276.5;  // 0=刚开始 1=快超时
+  let judge;
+  if (ratio > 0.6) { judge = 'Perfect'; BS.perfect++; BS.score += 100; BS.combo++; }
+  else { judge = 'Good'; BS.good++; BS.score += 50; BS.combo++; }
+  bsShowJudge(judge, judge==='Perfect'?'#ffd066':'#a8e6a3');
+  bsBeep(880, 0.18, 0.25);
+  setBird('happy'); setGirl(judge==='Perfect'?'happy':'sing');
+  const bird = document.getElementById('bs-bird');
+  bird.classList.remove('bs-jump'); void bird.offsetWidth; bird.classList.add('bs-jump');
+  bsUpdateHud();
+  // Combo 彩蛋
+  if (BS.combo === 20 && !state.birdComboEgg) {
+    state.birdComboEgg = true;
+    setTimeout(()=>{
+      closeBirdsong();
+      setTimeout(()=>showDialog('@bf','你在跟小鸟合唱？……太可爱了你。'), 400);
+      changeStat('love', +15);
+    }, 600);
+    return;
+  }
+  // 难度递增
+  if (BS.combo % 5 === 0 && BS.combo > 0) {
+    BS.bpm = Math.min(BS.bpm + 5, 140);
+    BS.beatMs = 60000 / BS.bpm;
+    BS.patternLen = Math.min(BS.patternLen + 1, 6);
+  }
+  setTimeout(()=> bsStartRound(), BS.beatMs * 1.5);
+}
+
+function bsMiss() {
+  if (BS.phase !== 'wait_player') return;
+  BS.phase = 'miss';
+  document.getElementById('bs-hit-ring').classList.remove('active');
+  BS.miss++; BS.combo = 0; BS.missCount++;
+  bsBeep(220, 0.2, 0.15, 'sawtooth');
+  setBird('confused'); setGirl('idle');
+  bsShowJudge('Miss', '#ff8888');
+  bsUpdateHud();
+  if (BS.miss >= BS.maxMiss) {
+    setTimeout(()=> bsShowResult(), 600);
+    return;
+  }
+  setTimeout(()=> bsStartRound(), BS.beatMs * 2);
+}
+
+function bsShowJudge(text, color) {
+  const el = document.createElement('div');
+  el.className = 'bs-judge-text';
+  el.textContent = text;
+  el.style.color = color;
+  document.getElementById('birdsong-overlay').appendChild(el);
+  setTimeout(()=>el.remove(), 850);
+}
+
+function bsUpdateHud() {
+  document.getElementById('bs-score-num').textContent = BS.score;
+  document.getElementById('bs-combo-label').textContent = BS.combo > 1 ? `✨ ${BS.combo} Combo` : '';
+  const hearts = '❤ '.repeat(Math.max(0, BS.maxMiss - BS.miss)).trim() + ' 🖤'.repeat(BS.miss).trim();
+  document.getElementById('bs-miss-label').textContent = hearts;
+}
+
+function bsShowResult() {
+  bsStopBeat(); BS.phase = 'result';
+  setBird(BS.score>200?'happy':'confused'); setGirl(BS.score>200?'happy':'idle');
+  const result = document.getElementById('bs-result');
+  document.getElementById('bs-result-title').textContent = BS.score > 300 ? '🌟 超棒！' : BS.score > 100 ? '🎵 不错哦' : '💧 继续加油';
+  document.getElementById('bs-result-stats').innerHTML =
+    `得分：<b>${BS.score}</b>&nbsp;&nbsp; Perfect：${BS.perfect}&nbsp;&nbsp; Good：${BS.good}&nbsp;&nbsp; Miss：${BS.missCount}`;
+  result.classList.add('show');
+}
+
+// 窗户点击入口（白天时触发）
+function openWindowGame() {
+  if (state.heroAsleep) {
+    showDialog('系统', '……他在睡觉，动静小一点。');
+    return;
+  }
+  openBirdsong();
+}
 
 // ============ 封面主界面 ============
 function showCover() {
