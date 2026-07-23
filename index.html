@@ -1161,16 +1161,16 @@
       <div class="scene-label">厕所</div>
       <!-- 马桶 sprite -->
       <img class="prop" src="assets/toilet.png" alt=""
-           style="left:6%; bottom:8%; width:22%;" />
+           style="right:2%; bottom:3%; width:40%;" />
       <!-- 水槽梳妆台 sprite -->
       <img class="prop" src="assets/sink.png" alt=""
-           style="left:36%; bottom:6%; width:28%;" />
+           style="left:28%; bottom:6%; width:55%;" />
       <!-- 淋浴间 sprite -->
       <img class="prop" src="assets/shower.png" alt=""
-           style="right:4%; bottom:6%; width:28%;" />
+           style="left:-10%; bottom:-3%; width:70%;" />
       <!-- 马桶热区 -->
       <div class="hotspot" data-action="toilet"
-           style="left:7%; top:56%; width:20%; height:36%;">
+           style="right:8%; top:56%; width:20%; height:36%;">
         <span class="hotspot-label">🚽 马桶</span>
       </div>
       <!-- 水槽热区 -->
@@ -1180,7 +1180,7 @@
       </div>
       <!-- 淋浴热区 -->
       <div class="hotspot" data-action="shower"
-           style="right:5%; top:24%; width:26%; height:70%;">
+           style="left:12%; top:24%; width:20%; height:70%;">
         <span class="hotspot-label">🚿 淋浴</span>
       </div>
       <img class="character" id="hero-bathroom"
@@ -1381,7 +1381,7 @@
 const DEFAULT_STATE = {
   stats: { love: 20, passion: 10, understanding: 20, stress: 15 },
   scene: 'living',
-  lightsOn: { living: true, bedroom: true },   // 每场景独立
+  lightsOn: { living: true, bedroom: true, bathroom: true },   // 每场景独立
   autoLightsAdjusted: false,                    // 夜晚自动关灯是否已执行
   atComputer: false,
   chipCount: 0,
@@ -1412,7 +1412,7 @@ function loadState() {
     const parsed = JSON.parse(raw);
     // 老存档兼容：lightsOn 曾是 boolean
     if (typeof parsed.lightsOn === 'boolean') {
-      parsed.lightsOn = { living: parsed.lightsOn, bedroom: true };
+      parsed.lightsOn = { living: parsed.lightsOn, bedroom: true, bathroom: true };
     }
     return { ...structuredClone(DEFAULT_STATE), ...parsed,
              lightsOn: {...DEFAULT_STATE.lightsOn, ...(parsed.lightsOn || {})} };
@@ -1537,6 +1537,8 @@ function applyLights() {
   document.getElementById('scene-living').classList.toggle('dark', !state.lightsOn.living);
   const bed = document.getElementById('scene-bedroom');
   if (bed) bed.classList.toggle('dark', !state.lightsOn.bedroom);
+  const bath = document.getElementById('scene-bathroom');
+  if (bath) bath.classList.toggle('dark', !state.lightsOn.bathroom);
 }
 // 昼夜切换：根据 gameTime 决定 6:00-18:00 白天，其他黑夜
 function isNightMode() {
@@ -1559,32 +1561,39 @@ function applyDayNight() {
       ? "url('assets/bg_bedroom_night.png')"
       : "url('assets/bg_bedroom.png')";
   }
-  // 22:00 进入夜晚 → 同步：关楼上楼下灯 + 男主消失 + 卧室换夜景（三件事同一时间）
+  // 22:00 进入夜晚 → 同步：关楼上楼下+厕所灯 + 男主消失 + 卧室换夜景 + 一次性提示
   if (isNight && !state.autoLightsAdjusted) {
     state.lightsOn.living = false;
     state.lightsOn.bedroom = false;
+    state.lightsOn.bathroom = false;
     state.autoLightsAdjusted = true;
     applyLights();
     saveState();
+    // 男主"要睡了"一次性提示
+    setTimeout(() => showDialog('@bf', '好困了，去睡觉觉啦宝宝……'), 300);
   }
   // 白天 6:00 自动开灯 + 重置
   if (isDay && state.autoLightsAdjusted) {
     state.lightsOn.living = true;
     state.lightsOn.bedroom = true;
+    state.lightsOn.bathroom = true;
     state.autoLightsAdjusted = false;
     applyLights();
     saveState();
   }
-  // 夜晚：客厅+卧室的站立男主全部隐藏（他已在夜晚卧室背景里睡着）
+  // 夜晚：客厅+卧室+厕所的站立男主全部隐藏（他已在夜晚卧室背景里睡着）
   const heroLiving = document.getElementById('hero-living');
   const heroBedroom = document.getElementById('hero-bedroom');
+  const heroBathroom = document.getElementById('hero-bathroom');
   if (heroLiving && heroBedroom) {
     if (isNight) {
       heroLiving.style.display = 'none';
       heroBedroom.style.display = 'none';
+      if (heroBathroom) heroBathroom.style.display = 'none';
     } else if (!state.atComputer) {
       heroLiving.style.display = '';
       heroBedroom.style.display = '';
+      if (heroBathroom) heroBathroom.style.display = '';
     }
   }
 }
@@ -2028,18 +2037,44 @@ const INTERACTIONS = {
     changeStat('stress', -2);
   },
   leftExit: () => { /* deprecated, kept for legacy */ },
-  goOut: () => {
-    state.outCount = (state.outCount || 0) + 1;
-    // 满 3 次且未播过散步剧情：触发散步
-    if (state.outCount >= 3 && !state.walkDone) {
-      setTimeout(triggerWalkStory, 300);
-      return;
-    }
-    showDialog('@bf', '出去走走？我陪你～');
-    changeStat('stress', -5);
-    changeStat('love', +2);
-    changeStat('understanding', +1);
-    saveState();
+  goOut: (evt) => {
+    const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="goOut"]');
+    showMenu(anchor, [
+      {
+        label: '💪 去健身房',
+        onClick: () => {
+          state.outCount = (state.outCount || 0) + 1;
+          // 健身房：加压力、减心情，同时缓解薯片肥胖
+          changeStat('stress', +8);
+          changeStat('love', -3);
+          if (state.chipCount > 0) {
+            state.chipCount = Math.max(0, state.chipCount - 1);
+            applyHeroScale();
+          }
+          showDialog('@bf', '……好，你健身，我在旁边看你。');
+          advanceTime(6);
+          saveState();
+          if (state.outCount >= 3 && !state.walkDone) {
+            setTimeout(triggerWalkStory, 400);
+          }
+        }
+      },
+      {
+        label: '🌆 出去玩',
+        onClick: () => {
+          state.outCount = (state.outCount || 0) + 1;
+          showDialog('@bf', '出去走走？我陪你～');
+          changeStat('stress', -8);
+          changeStat('love', +3);
+          changeStat('understanding', +1);
+          advanceTime(6);
+          saveState();
+          if (state.outCount >= 3 && !state.walkDone) {
+            setTimeout(triggerWalkStory, 400);
+          }
+        }
+      },
+    ]);
   },
   toilet: () => {
     showDialog('@bf', '……你别看啦！');
@@ -2084,8 +2119,8 @@ const INTERACTIONS = {
 };
 
 // ============ 事件绑定 ============
-// 哪些 action 不推进时间（弹菜单/切换姿势本身）
-const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer','goOut']);
+// 哪些 action 不推进时间（弹菜单/切换姿势本身/摸玩偶）
+const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer','goOut','bed','bunny','penguin']);
 // 夜晚被禁用的白天专属 action（占位对白）
 const DAYTIME_ONLY_ACTIONS = new Set(['computer','sofa','chip','goOut']);
 const NIGHT_PLACEHOLDER = {
