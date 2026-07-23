@@ -2122,6 +2122,8 @@ document.addEventListener('click', (e) => {
     }
     const fn = INTERACTIONS[action];
     if (fn) fn({ currentTarget: spot });
+    // 夜晚：所有行动都不消耗时间（只有点床里的"一起睡"/"出去住"手动推进）
+    if (isNightMode()) return;
     if (!NO_TIME_ACTIONS.has(action)) advanceTime();
   }
 });
