@@ -1318,7 +1318,7 @@
       <img class="prop" id="prop-window" src="assets/window_day.png" alt="" data-state="day" />
       <!-- 窗户热区（白天可点，位置覆盖prop-window所在区域） -->
       <div class="hotspot" id="window-hotspot" data-action="window"
-           style="right:18%; top:30%; width:20%; height:42%;">
+           style="right:27%; top:30%; width:15%; height:42%;">
         <span class="hotspot-label">🪟 看风景</span>
       </div>
       <!-- 吊灯 sprite -->
@@ -2295,11 +2295,10 @@ const INTERACTIONS = {
     changeStat('stress', -2);
   },
   window: () => {
-    // 白天可以看风景/和小鸟唱歌
     if (!isNightMode() && !state.heroAsleep) {
       openWindowGame();
     } else {
-      showDialog('系统', '窗外很暗，什么都看不清。');
+      triggerNightWindowStory();
     }
   },
   leftExit: () => { /* deprecated, kept for legacy */ },
@@ -2907,6 +2906,73 @@ function openWindowGame() {
     return;
   }
   openBirdsong();
+}
+
+// ============ 夜晚窗户剧情 ============
+async function triggerNightWindowStory() {
+  // 城景独白
+  cgShow('assets/cg_night_city.png');
+  await cgSay('旁白', '城市的灯火从来不灭。');
+  await cgSay('旁白', '你站在窗边，看着那些遥远的光点，心里忽然涌出一些说不清楚的东西。');
+  await cgSay('你', '……我是真的喜欢他吗。');
+  await cgSay('旁白', '这个问题像石头一样沉下去。');
+  await cgSay('你', '怎么就……这样在一起了呢。');
+  await cgSay('旁白', '不是不好。只是……有时候不确定，这条路走下去，会去哪里。');
+  await cgSay('你', '……以后会怎样呢。');
+
+  // 男主出现，从背后抱住
+  cgShow('assets/cg_hug_window.png');
+  await new Promise(r => setTimeout(r, 400));
+  await cgSay('旁白', '你没听见脚步声。直到一双手从身后轻轻环住你。');
+  await cgSay('@bf', '……站这么久了。');
+  await cgSay('旁白', '他把下巴搁在你肩上，顺着你的视线看向城市。');
+  await cgSay('@bf', '在想什么？');
+  await cgSay('你', '……没什么。');
+  await cgSay('@bf', '嗯。');
+  await cgSay('旁白', '他没有追问。只是把你抱得更紧了一点。');
+  await cgSay('@bf', '不管你在想什么——我在。');
+
+  changeStat('love', +10);
+  changeStat('understanding', +5);
+  changeStat('stress', -8);
+
+  // 邀去看烟花
+  await cgSay('@bf', '……其实，我知道今晚有个地方会放烟花。');
+  await cgSay('@bf', '要不要，一起去看？');
+
+  const pick = await cgChoose(['好呀，走吧 ✨', '……改天吧'], 0);
+
+  if (pick === 0 || pick === null) {
+    // 一起去看烟花
+    cgShow('assets/cg_fireworks.png');
+    await new Promise(r => setTimeout(r, 400));
+    await cgSay('旁白', '你们去了。');
+    await cgSay('旁白', '烟花在夜空中炸开，金色的火光落在他脸上。');
+    await cgSay('@bf', '……好看吧。');
+    await cgSay('你', '嗯。');
+    await cgSay('旁白', '你没告诉他你其实不是在看烟花。');
+    changeStat('love', +12);
+    changeStat('passion', +8);
+    changeStat('stress', -5);
+    changeStat('understanding', +5);
+    state.nightWindowDone = true;
+    saveState();
+    cgHide();
+    applyComputerPose();
+    applyDayNight();
+    // 推进时间（夜晚出去看烟花）
+    const d = jumpToNextMorning();
+    setTimeout(()=>showDialog('系统', `——第 ${d} 天 07:00——`), 500);
+  } else {
+    await cgSay('@bf', '……好。下次。');
+    await cgSay('旁白', '他轻轻松开你，转身去倒了杯水。');
+    changeStat('love', +3);
+    state.nightWindowDone = true;
+    saveState();
+    cgHide();
+    applyComputerPose();
+    applyDayNight();
+  }
 }
 
 // ============ 封面主界面 ============
