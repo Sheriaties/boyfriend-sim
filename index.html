@@ -1353,6 +1353,7 @@
     <button onclick="advanceTime(6)">⏩ +6 小时</button>
     <button onclick="advanceTime(24)">⏩ +1 天</button>
     <button onclick="dev_setDay(8)">⏩ 跳到第 8 天（第 2 周）</button>
+    <button onclick="state.heroAsleep = !state.heroAsleep; applyDayNight(); saveState(); alert('男主 heroAsleep = '+state.heroAsleep);">🌙 切换男主睡/醒</button>
     <button onclick="state.outCount=(state.outCount||0)+1; saveState(); alert('外出次数: '+state.outCount);">外出次数 +1</button>
     <button onclick="state.nightOutCount=(state.nightOutCount||0)+1; saveState(); alert('出去住次数: '+state.nightOutCount);">出去住次数 +1</button>
     <button onclick="state.chipCount=(state.chipCount||0)+1; applyHeroScale(); saveState(); alert('薯片次数: '+state.chipCount);">薯片次数 +1</button>
@@ -1387,6 +1388,7 @@ const DEFAULT_STATE = {
   chipCount: 0,
   outCount: 0,
   nightOutCount: 0,
+  heroAsleep: false,   // 男主睡着(男主立绘全隐藏,卧室用夜景版,直到玩家一起睡或叫醒)
   walkDone: false,
   argueDone: false,
   kissDone: false,
@@ -1528,29 +1530,31 @@ function applyDayNight() {
   const isNight = isNightMode();
   const win = document.getElementById('prop-window');
   if (win) {
-    win.src = isDay ? 'assets/window_day.png' : 'assets/window_night.png';
-    win.dataset.state = isDay ? 'day' : 'night';
+    // 窗户视觉跟"男主是否睡着"绑定：只要还没醒,一直用夜晚版
+    const useNightVisual = isNight || state.heroAsleep;
+    win.src = useNightVisual ? 'assets/window_night.png' : 'assets/window_day.png';
+    win.dataset.state = useNightVisual ? 'night' : 'day';
   }
-  // 卧室背景切换：白天空床 / 夜晚男主睡床
+  // 卧室背景切换：只要男主睡着就用夜景版(男主躺床)
   const bedScene = document.getElementById('scene-bedroom');
   if (bedScene) {
-    bedScene.style.backgroundImage = isNight
+    bedScene.style.backgroundImage = state.heroAsleep
       ? "url('assets/bg_bedroom_night.png')"
       : "url('assets/bg_bedroom.png')";
   }
-  // 22:00 进入夜晚 → 同步：关楼上楼下+厕所灯 + 男主消失 + 卧室换夜景 + 一次性提示
+  // 22:00 首次进夜 → 男主入睡 + 关全屋灯 + 一次性对白
   if (isNight && !state.autoLightsAdjusted) {
+    state.heroAsleep = true;
     state.lightsOn.living = false;
     state.lightsOn.bedroom = false;
     state.lightsOn.bathroom = false;
     state.autoLightsAdjusted = true;
     applyLights();
     saveState();
-    // 男主"要睡了"一次性提示
     setTimeout(() => showDialog('@bf', '好困了，去睡觉觉啦宝宝……'), 300);
   }
-  // 白天 6:00 自动开灯 + 重置
-  if (isDay && state.autoLightsAdjusted) {
+  // 白天 6:00：只重置 autoLightsAdjusted 标志(允许下一晚再触发),但如果男主还没被叫醒/一起睡,灯继续关
+  if (isDay && state.autoLightsAdjusted && !state.heroAsleep) {
     state.lightsOn.living = true;
     state.lightsOn.bedroom = true;
     state.lightsOn.bathroom = true;
@@ -1558,12 +1562,12 @@ function applyDayNight() {
     applyLights();
     saveState();
   }
-  // 夜晚：客厅+卧室+厕所的站立男主全部隐藏（他已在夜晚卧室背景里睡着）
+  // 男主是否睡着决定立绘显隐（跨越 22:00 → 07:00 之后依然睡）
   const heroLiving = document.getElementById('hero-living');
   const heroBedroom = document.getElementById('hero-bedroom');
   const heroBathroom = document.getElementById('hero-bathroom');
   if (heroLiving && heroBedroom) {
-    if (isNight) {
+    if (state.heroAsleep) {
       heroLiving.style.display = 'none';
       heroBedroom.style.display = 'none';
       if (heroBathroom) heroBathroom.style.display = 'none';
@@ -1614,7 +1618,6 @@ function jumpToNextMorning() {
   return nextDay + 1;
 }
 async function sleepTogether() {
-  // 黑屏 CG（没图就纯黑 + 旁白）
   const overlay = document.getElementById('cg-overlay');
   const img = document.getElementById('cg-image');
   img.src = '';
@@ -1627,11 +1630,11 @@ async function sleepTogether() {
   await cgSay('@bf', '……过来一点。');
   await cgSay('旁白', '呼吸交叠，心跳彼此贴着彼此。');
   await cgSay('旁白', '你在他怀里睡着了。');
-  // 数值 + 跳日
   changeStat('love', +8);
   changeStat('understanding', +8);
   changeStat('passion', +8);
   changeStat('stress', -20);
+  state.heroAsleep = false;    // 一起睡完他也醒了(次日一起醒)
   const d = jumpToNextMorning();
   cgHide();
   img.style.background = '';
@@ -1653,18 +1656,30 @@ async function stayOut() {
   await cgSay('旁白', '你订了一间小旅馆的房，一个人度过了这一夜。');
   changeStat('stress', -10);
   changeStat('love', -3);
+  state.heroAsleep = false;   // 你回来时他已经醒了
   saveState();
   const d = jumpToNextMorning();
   cgHide();
   img.style.background = '';
   img.style.width = '';
   img.style.height = '';
-  // 第 4 次触发 gone 结局
   if (state.nightOutCount >= 4) {
     setTimeout(() => triggerEnding('gone'), 800);
   } else {
     setTimeout(() => showDialog('系统', `——第 ${d} 天 07:00——`), 500);
   }
+}
+// 天亮后玩家去床边叫醒男主
+function wakeHim() {
+  state.heroAsleep = false;
+  state.lightsOn.living = true;
+  state.lightsOn.bedroom = true;
+  state.lightsOn.bathroom = true;
+  applyLights();
+  applyDayNight();
+  saveState();
+  showDialog('@bf', '……嗯？几点了……你怎么起这么早。');
+  changeStat('understanding', +2);
 }
 
 // ============ 结局系统 ============
@@ -1984,23 +1999,22 @@ const INTERACTIONS = {
     if (isNightMode()) {
       // 夜晚：一起睡 / 探索家里 / 出去住
       showMenu(anchor, [
-        {
-          label: '🌙 一起睡',
-          onClick: () => sleepTogether(),
-        },
-        {
-          label: '🌃 探索家里',
-          onClick: () => {
+        { label: '🌙 一起睡', onClick: () => sleepTogether() },
+        { label: '🌃 探索家里', onClick: () => {
             showDialog('系统', '你悄悄退出了卧室。他熟睡的家，安静得只剩你自己的脚步声。');
-          }
-        },
-        {
-          label: '🚪 出去住',
-          onClick: () => stayOut(),
-        },
+        }},
+        { label: '🚪 出去住', onClick: () => stayOut() },
+      ]);
+    } else if (state.heroAsleep) {
+      // 白天但男主还在睡 → 叫醒他
+      showMenu(anchor, [
+        { label: '🌞 叫醒他', onClick: () => wakeHim() },
+        { label: '……让他再睡会儿', onClick: () => {
+            showDialog('系统', '你踮着脚走出了卧室。');
+        }},
       ]);
     } else {
-      // 白天点床
+      // 白天男主已经醒着
       showDialog('系统', '我现在还不是很想睡觉。');
     }
   },
@@ -2098,14 +2112,15 @@ const INTERACTIONS = {
 // ============ 事件绑定 ============
 // 哪些 action 不推进时间（弹菜单/切换姿势本身/摸玩偶）
 const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer','goOut','bed','bunny','penguin']);
-// 夜晚被禁用的白天专属 action（占位对白）
-const DAYTIME_ONLY_ACTIONS = new Set(['computer','sofa','chip','goOut']);
-const NIGHT_PLACEHOLDER = {
-  computer: '现在半夜了，明天再工作吧……',
-  sofa:     '沙发上凉凉的，没有他在——回床上吧。',
-  chip:     '深夜吃薯片……算了，别吵到他。',
-  goOut:    '这么晚出门不安全，等明天。',
+// 男主睡着时被禁用的 action（需要他在场的日常互动）
+const NEEDS_HERO_ACTIONS = new Set(['sofa','chip','goOut']);
+const HERO_ASLEEP_PLACEHOLDER = {
+  sofa: '沙发上凉凉的，没有他在——回床上吧。',
+  chip: '别吵到他，深夜/清晨不太适合吃这个。',
+  goOut: '他还在睡，你没心思出门。',
 };
+// 夜晚可消耗时间的白名单：电脑/水槽/淋浴/马桶
+const NIGHT_TIME_CONSUMING = new Set(['computer','sink','shower','toilet']);
 
 document.addEventListener('click', (e) => {
   // 已结局：拦截所有交互（除结局屏的重来按钮）
@@ -2115,15 +2130,19 @@ document.addEventListener('click', (e) => {
   const spot = e.target.closest('[data-action]');
   if (spot) {
     const action = spot.dataset.action;
-    // 夜晚：白天专属 action 只弹占位对白，不推进时间
-    if (isNightMode() && DAYTIME_ONLY_ACTIONS.has(action)) {
-      showDialog('系统', NIGHT_PLACEHOLDER[action] || '……深夜就别做这个了。');
+    // 男主睡着 → 需要他在场的动作只弹占位对白
+    if (state.heroAsleep && NEEDS_HERO_ACTIONS.has(action)) {
+      showDialog('系统', HERO_ASLEEP_PLACEHOLDER[action] || '他还在睡，等等吧。');
       return;
     }
     const fn = INTERACTIONS[action];
     if (fn) fn({ currentTarget: spot });
-    // 夜晚：所有行动都不消耗时间（只有点床里的"一起睡"/"出去住"手动推进）
-    if (isNightMode()) return;
+    // 男主睡着时：只有电脑/水槽/淋浴/马桶消耗时间(玩游戏/洗澡/上厕所)
+    if (state.heroAsleep) {
+      if (NIGHT_TIME_CONSUMING.has(action)) advanceTime();
+      return;
+    }
+    // 白天正常规则
     if (!NO_TIME_ACTIONS.has(action)) advanceTime();
   }
 });
