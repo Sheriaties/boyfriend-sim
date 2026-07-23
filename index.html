@@ -1470,35 +1470,12 @@ function advanceTime(hours = HOURS_PER_ACTION) {
   state.gameTime = (state.gameTime | 0) + hours * 60;
   renderClock();
   applyDayNight();
-  // 是否跨过午夜 24:00 → 触发睡觉
-  const dayMins = state.gameTime % (24*60);
-  if (dayMins >= 22*60 || dayMins < 6*60) {
-    if (!state.sleepPrompted) {
-      state.sleepPrompted = true;
-      setTimeout(() => triggerBedtime(), 800);
-    }
-  } else {
-    state.sleepPrompted = false;
-  }
   saveState();
   // 4 周结算判定
   checkFinalEnding();
 }
-function triggerBedtime() {
-  showDialog('@bf', '有点困了……我们上去睡吧？');
-  setTimeout(() => {
-    // 推进到次日 07:00
-    const t = state.gameTime;
-    const nextDay = Math.floor(t / (24*60)) + 1;
-    state.gameTime = nextDay * 24 * 60 + 7 * 60;
-    state.sleepPrompted = false;
-    changeStat('stress', -10);
-    changeStat('understanding', +2);
-    renderClock();
-    saveState();
-    showDialog('系统', `——第 ${nextDay + 1} 天 07:00——`);
-  }, 3200);
-}
+// 兼容旧调用（如果还有地方引用），已不再自动催睡觉
+function triggerBedtime() { /* deprecated: 22:00 由 applyDayNight 一次性提示 */ }
 
 // ============ 气泡菜单 ============
 function showMenu(anchorEl, items) {
