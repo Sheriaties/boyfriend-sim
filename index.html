@@ -399,6 +399,8 @@
     border-color: rgba(255,0,0,0.6);
   }
   body.debug .hotspot-label { opacity: 1; transform: none; }
+  /* 夜晚（男主睡着）隐藏卧室玩偶热区 */
+  body.hero-asleep .plushie-hotspot { display: none; }
 
   /* BAD END 覆盖屏 —— 用 PV 图作背景 + 半透明面板 */
   .bad-end {
@@ -713,6 +715,8 @@
     animation: menuPop 0.2s ease-out;
     position: relative;
     max-width: 90vw;
+    transform: scale(0.95);   /* 整体缩小5%,避免撑出屏幕 */
+    transform-origin: center;
   }
   .mini-title {
     font-size: 1.8vw;
@@ -822,24 +826,55 @@
   .g2048-ctrl-right { grid-column: 3; grid-row: 2; }
   .g2048-ctrl-down  { grid-column: 2; grid-row: 3; }
 
-  /* 彩蛋游戏机（藏在弹窗角落，只露一部分） */
-  .g2048-console-egg {
+  /* 彩蛋 — 卷角（首次看到就是一角"卷起的纸") */
+  .egg-corner {
     position: absolute;
-    width: 8vw;
-    z-index: 5;
+    right: 0; bottom: 0;
+    width: 3.5vw;
+    height: 3.5vw;
     cursor: pointer;
-    transition: all 0.5s cubic-bezier(0.5,0.1,0.3,1.2);
-    filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.3));
+    z-index: 6;
+    /* 折角外观：右下角一个金黄小三角 */
+    background:
+      linear-gradient(135deg,
+        transparent 0%, transparent 50%,
+        #ffd66b 50%, #ffb84a 100%);
+    border-bottom-right-radius: 6px;
+    box-shadow: inset -2px -2px 0 rgba(180,120,0,0.4), -4px -4px 8px -2px rgba(0,0,0,0.25);
+    transition: all 0.25s cubic-bezier(.4,.2,.4,1);
+  }
+  .egg-corner::after {
+    /* 折痕线 */
+    content: "";
+    position: absolute;
+    top: 0; right: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, transparent 47%, rgba(120,70,10,0.35) 50%, transparent 53%);
+    pointer-events: none;
+  }
+  .egg-corner:hover {
+    transform: scale(1.12) rotate(-5deg);
+    filter: drop-shadow(0 0 12px rgba(255,220,120,0.9));
+  }
+  /* 状态2：卷角掀起后露出游戏机 */
+  .egg-console {
+    position: absolute;
+    right: -1vw; bottom: -1vw;
+    width: 8vw;
+    z-index: 7;
+    cursor: pointer;
+    display: none;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
-    pointer-events: auto;
+    filter: drop-shadow(0 0 12px rgba(255,180,80,0.7)) drop-shadow(2px 4px 4px rgba(0,0,0,0.35));
+    transform: rotate(-8deg);
+    animation: eggReveal 0.4s cubic-bezier(.4,.2,.4,1.2);
   }
-  .g2048-console-egg:hover { filter: drop-shadow(0 0 12px rgba(255,180,80,0.8)) drop-shadow(2px 4px 4px rgba(0,0,0,0.3)); }
-  /* 4 个角落位置 */
-  .g2048-console-egg.pos-tl { top: -3.5vw; left: -3.5vw; transform: rotate(-25deg); }
-  .g2048-console-egg.pos-tr { top: -3.5vw; right: -3.5vw; left: auto; transform: rotate(25deg); }
-  .g2048-console-egg.pos-bl { bottom: -3.5vw; left: -3.5vw; transform: rotate(25deg); }
-  .g2048-console-egg.pos-br { bottom: -3.5vw; right: -3.5vw; left: auto; transform: rotate(-25deg); }
+  @keyframes eggReveal {
+    from { transform: rotate(-8deg) scale(0.4) translate(30%,30%); opacity: 0; }
+    to   { transform: rotate(-8deg) scale(1); opacity: 1; }
+  }
+  .egg-console:hover { filter: drop-shadow(0 0 24px rgba(255,220,120,1)) drop-shadow(2px 4px 4px rgba(0,0,0,0.4)); }
   .mini-actions {
     display: flex;
     justify-content: center;
@@ -1193,26 +1228,18 @@
     <!-- 卧室场景（夹层） -->
     <div class="scene" id="scene-bedroom" data-name="卧室">
       <div class="scene-label">卧室</div>
-      <!-- 吊灯 sprite（卧室） -->
-      <img class="prop" data-lamp src="assets/pendant_lamp.png" alt=""
-           style="left:44%; top:2%; width:14%;" />
-      <!-- 吊灯热区（卧室） -->
-      <div class="hotspot" data-action="lamp"
-           style="left:46%; top:14%; width:10%; height:14%;">
-        <span class="hotspot-label">💡 吊灯</span>
-      </div>
       <!-- 大床热区 -->
       <div class="hotspot" data-action="bed"
            style="left:22%; top:56%; width:56%; height:34%;">
         <span class="hotspot-label">🛏 床</span>
       </div>
       <!-- 兔子玩偶热区 -->
-      <div class="hotspot" data-action="bunny"
+      <div class="hotspot plushie-hotspot" data-action="bunny"
            style="left:41%; top:52%; width:6%; height:12%;">
         <span class="hotspot-label">🐰 兔兔</span>
       </div>
       <!-- 企鹅玩偶热区 -->
-      <div class="hotspot" data-action="penguin"
+      <div class="hotspot plushie-hotspot" data-action="penguin"
            style="left:48%; top:52%; width:6%; height:12%;">
         <span class="hotspot-label">🐧 企鹅</span>
       </div>
@@ -1285,7 +1312,9 @@
   <!-- 2048 迷你游戏弹窗 -->
   <div id="mini-2048" class="mini-modal">
     <div class="mini-box">
-      <img class="g2048-console-egg pos-br" id="g2048-console" src="assets/console.png" alt="" style="display:none;" />
+      <!-- 彩蛋:卷角(默认可见)→点击掀开→游戏机(状态2)→再点触发剧情 -->
+      <div class="egg-corner" id="egg-corner" style="display:none;" onclick="revealConsoleEgg()"></div>
+      <img class="egg-console" id="egg-console" src="assets/console.png" alt="" onclick="triggerCoopGame()" />
       <button class="mini-close" onclick="close2048()">×</button>
       <div class="mini-title">2 0 4 8</div>
       <div class="mini-hint">点方向按钮 / 手指滑动</div>
@@ -1359,6 +1388,7 @@
     <button onclick="state.chipCount=(state.chipCount||0)+1; applyHeroScale(); saveState(); alert('薯片次数: '+state.chipCount);">薯片次数 +1</button>
 
     <h4>其他</h4>
+    <button onclick="dev_toggleGodMode()">🛡 无敌模式（开/关，关闭时数值回初始）</button>
     <button onclick="document.body.classList.toggle('debug')">🔲 显示热区</button>
     <button onclick="if(confirm('重置存档？'))resetGame()">🗑 重置存档</button>
   </div>
@@ -1472,6 +1502,11 @@ function advanceTime(hours = HOURS_PER_ACTION) {
   state.gameTime = (state.gameTime | 0) + hours * 60;
   renderClock();
   applyDayNight();
+  // 每次时间推进后,如果男主在电脑前,自动恢复站姿(玩完了/工作完了)
+  if (state.atComputer) {
+    state.atComputer = false;
+    applyComputerPose();
+  }
   saveState();
   // 4 周结算判定
   checkFinalEnding();
@@ -1530,8 +1565,8 @@ function applyDayNight() {
   const isNight = isNightMode();
   const win = document.getElementById('prop-window');
   if (win) {
-    // 窗户视觉跟"男主是否睡着"绑定：只要还没醒,一直用夜晚版
-    const useNightVisual = isNight || state.heroAsleep;
+    // 窗户视觉：18:00 之后就切夜晚版；或男主睡着时保持夜晚感
+    const useNightVisual = !isDay || state.heroAsleep;
     win.src = useNightVisual ? 'assets/window_night.png' : 'assets/window_day.png';
     win.dataset.state = useNightVisual ? 'night' : 'day';
   }
@@ -1553,16 +1588,19 @@ function applyDayNight() {
     saveState();
     setTimeout(() => showDialog('@bf', '好困了，去睡觉觉啦宝宝……'), 300);
   }
-  // 白天 6:00：只重置 autoLightsAdjusted 标志(允许下一晚再触发),但如果男主还没被叫醒/一起睡,灯继续关
-  if (isDay && state.autoLightsAdjusted && !state.heroAsleep) {
-    state.lightsOn.living = true;
-    state.lightsOn.bedroom = true;
-    state.lightsOn.bathroom = true;
+  // 白天 + 男主已醒 → 确保灯是开的（不管 autoLightsAdjusted，直接保证）
+  if (isDay && !state.heroAsleep) {
     state.autoLightsAdjusted = false;
-    applyLights();
-    saveState();
+    if (!state.lightsOn.living || !state.lightsOn.bathroom) {
+      state.lightsOn.living   = true;
+      state.lightsOn.bedroom  = true;
+      state.lightsOn.bathroom = true;
+      applyLights();
+      saveState();
+    }
   }
   // 男主是否睡着决定立绘显隐（跨越 22:00 → 07:00 之后依然睡）
+  document.body.classList.toggle('hero-asleep', !!state.heroAsleep);
   const heroLiving = document.getElementById('hero-living');
   const heroBedroom = document.getElementById('hero-bedroom');
   const heroBathroom = document.getElementById('hero-bathroom');
@@ -1582,7 +1620,12 @@ function applyComputerPose() {
   const seated = state.scene === 'living' && state.atComputer;
   document.getElementById('prop-hero-working').style.display = seated ? 'block' : 'none';
   document.getElementById('prop-computer').style.display    = seated ? 'none'  : 'block';
-  document.getElementById('hero-living').style.display      = seated ? 'none'  : 'block';
+  // If hero is asleep, keep hero-living hidden regardless of seated state
+  if (state.heroAsleep) {
+    document.getElementById('hero-living').style.display = 'none';
+  } else {
+    document.getElementById('hero-living').style.display = seated ? 'none' : '';
+  }
 }
 
 // ============ 男主体型缩放（薯片喂食）============
@@ -1806,10 +1849,24 @@ const ENDINGS = {
 
 function triggerEnding(id) {
   if (state.ended) return;
+  if (state.godMode) {
+    console.log('[godMode] blocked ending:', id);
+    return;
+  }
   state.ended = true;
   state.endingId = id;
   saveState();
   showEnding(id);
+}
+// 开发者：切换无敌模式，关闭时数值回到默认起始
+function dev_toggleGodMode() {
+  state.godMode = !state.godMode;
+  if (!state.godMode) {
+    state.stats = structuredClone(DEFAULT_STATE.stats);
+    renderStats();
+  }
+  saveState();
+  alert('godMode = ' + state.godMode + (state.godMode ? '\n（结局判定已禁用）' : '\n（数值已重置为初始）'));
 }
 function showEnding(id) {
   const e = ENDINGS[id];
@@ -1893,6 +1950,7 @@ function switchScene(name) {
     // 离开客厅时，坐姿复位
     if (name !== 'living') state.atComputer = false;
     applyComputerPose();
+    applyDayNight();
     saveState();
   }
 }
@@ -1997,16 +2055,11 @@ const INTERACTIONS = {
   bed: (evt) => {
     const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="bed"]');
     if (isNightMode()) {
-      // 夜晚：一起睡 / 探索家里 / 出去住
+      // 夜晚：只有一起睡（出去住由外出按钮触发）
       showMenu(anchor, [
         { label: '🌙 一起睡', onClick: () => sleepTogether() },
-        { label: '🌃 探索家里', onClick: () => {
-            showDialog('系统', '你悄悄退出了卧室。他熟睡的家，安静得只剩你自己的脚步声。');
-        }},
-        { label: '🚪 出去住', onClick: () => stayOut() },
       ]);
     } else if (state.heroAsleep) {
-      // 白天但男主还在睡 → 叫醒他
       showMenu(anchor, [
         { label: '🌞 叫醒他', onClick: () => wakeHim() },
         { label: '……让他再睡会儿', onClick: () => {
@@ -2014,7 +2067,6 @@ const INTERACTIONS = {
         }},
       ]);
     } else {
-      // 白天男主已经醒着
       showDialog('系统', '我现在还不是很想睡觉。');
     }
   },
@@ -2029,13 +2081,17 @@ const INTERACTIONS = {
   },
   leftExit: () => { /* deprecated, kept for legacy */ },
   goOut: (evt) => {
+    // 夜晚(男主睡着):外出=直接出去住
+    if (state.heroAsleep) {
+      stayOut();
+      return;
+    }
     const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="goOut"]');
     showMenu(anchor, [
       {
         label: '💪 去健身房',
         onClick: () => {
           state.outCount = (state.outCount || 0) + 1;
-          // 健身房：加压力、减心情，同时缓解薯片肥胖
           changeStat('stress', +8);
           changeStat('love', -3);
           if (state.chipCount > 0) {
@@ -2111,13 +2167,12 @@ const INTERACTIONS = {
 
 // ============ 事件绑定 ============
 // 哪些 action 不推进时间（弹菜单/切换姿势本身/摸玩偶）
-const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer','goOut','bed','bunny','penguin']);
+const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer','goOut','bed','bunny','penguin','chip']);
 // 男主睡着时被禁用的 action（需要他在场的日常互动）
-const NEEDS_HERO_ACTIONS = new Set(['sofa','chip','goOut']);
+const NEEDS_HERO_ACTIONS = new Set(['sofa','chip']);
 const HERO_ASLEEP_PLACEHOLDER = {
   sofa: '沙发上凉凉的，没有他在——回床上吧。',
   chip: '别吵到他，深夜/清晨不太适合吃这个。',
-  goOut: '他还在睡，你没心思出门。',
 };
 // 夜晚可消耗时间的白名单：电脑/水槽/淋浴/马桶
 const NIGHT_TIME_CONSUMING = new Set(['computer','sink','shower','toilet']);
@@ -2285,6 +2340,8 @@ async function triggerWalkStory() {
   state.walkDone = true;
   saveState();
   cgHide();
+  applyComputerPose();
+  applyDayNight();
 }
 
 // ============ 争吵剧情 ============
@@ -2321,6 +2378,8 @@ async function triggerArgueStory() {
   state.argueDone = true;
   saveState();
   cgHide();
+  applyComputerPose();
+  applyDayNight();
 }
 
 // ============ 接吻剧情（占位：用争吵图 + 台词） ============
@@ -2336,7 +2395,11 @@ async function triggerKissStory(opts = {}) {
   changeStat('passion', +15);
   state.kissDone = true;
   saveState();
-  if (!opts.fromArgue) cgHide();
+  if (!opts.fromArgue) {
+    cgHide();
+    applyComputerPose();
+    applyDayNight();
+  }
 }
 
 // ============ 开发者模式 ============
@@ -2493,65 +2556,50 @@ function open2048() {
   setupConsoleEgg();
 }
 
-// ============ 彩蛋任天堂游戏机 ============
-let consoleClicks = 0;
+// ============ 彩蛋任天堂游戏机（卷角 → 游戏机 → 对白+CG） ============
 function setupConsoleEgg() {
-  const egg = document.getElementById('g2048-console');
-  consoleClicks = 0;
+  const corner = document.getElementById('egg-corner');
+  const console_ = document.getElementById('egg-console');
   if (state.switchEggShown) {
-    egg.style.display = 'none';
+    corner.style.display = 'none';
+    console_.style.display = 'none';
     return;
   }
-  egg.style.display = '';
-  // 随机初始位置
-  moveConsoleEgg();
-  egg.onclick = onConsoleClick;
+  // 初始：只显示卷角
+  corner.style.display = 'block';
+  console_.style.display = 'none';
 }
-const EGG_POS = ['pos-tl','pos-tr','pos-bl','pos-br'];
-function moveConsoleEgg() {
-  const egg = document.getElementById('g2048-console');
-  const cur = EGG_POS.find(p => egg.classList.contains(p));
-  const options = EGG_POS.filter(p => p !== cur);
-  const next = options[Math.floor(Math.random() * options.length)];
-  EGG_POS.forEach(p => egg.classList.remove(p));
-  egg.classList.add(next);
+// 玩家点卷角 → 掀开露出游戏机
+function revealConsoleEgg() {
+  document.getElementById('egg-corner').style.display = 'none';
+  document.getElementById('egg-console').style.display = 'block';
 }
-async function onConsoleClick(e) {
-  e.stopPropagation();
-  consoleClicks++;
-  if (consoleClicks < 3) {
-    moveConsoleEgg();
-    return;
-  }
-  // 第 3 次点击：触发对白 + 选择
-  const egg = document.getElementById('g2048-console');
-  egg.style.display = 'none';
+// 玩家点游戏机 → 触发剧情
+async function triggerCoopGame() {
   state.switchEggShown = true;
-  saveState();
-  // 关闭 2048 面板，进入 CG 或对白
+  document.getElementById('egg-corner').style.display = 'none';
+  document.getElementById('egg-console').style.display = 'none';
+  // 关闭 2048 弹窗，进入 CG
   document.getElementById('mini-2048').classList.remove('show');
   g2048.active = false;
-  // 弹对白 → 用 CG 系统承载
+  saveState();
+
   cgShow('assets/cg_coop_game.png');
-  // 先用一张接近场景的图作背景（就先用双人玩CG,还没选就先显示）
-  await cgSay('@bf', '……说起来，其实任天堂也挺好玩的。');
-  await cgSay('@bf', '要不要，我们一起玩会儿？');
-  const pick = await cgChoose(['好呀！一起玩～', '不了，我看你玩'], 0); // 不自动
-  changeStat('understanding', +1);
+  await cgSay('你', '这次我来陪你一起玩游戏机吧。');
+  await cgSay('@bf', '嗯嗯好哇老婆……（感动）');
+  await cgSay('旁白', '你们头挨着头，肩靠着肩，一起看着小小的屏幕。');
+  await cgSay('@bf', '你手别抖……啊被我打到了！');
+  await cgSay('旁白', '很久没这样笑过了。这一刻，好像整个世界都安静了下来。');
+  state.coopGameDone = true;
+  // 数值：了解+10、心情+10、激情+10、压力-10
+  changeStat('understanding', +10);
   changeStat('love', +10);
-  if (pick === 0) {
-    // 一起玩
-    state.coopGameDone = true;
-    changeStat('passion', +10);
-    await cgSay('@bf', '好耶！（他兴奋地凑过来。）');
-    await cgSay('旁白', '你们头挨着头，肩靠着肩，一起看着屏幕。');
-    await cgSay('@bf', '你手别抖……啊被我打到了！');
-    await cgSay('旁白', '很久没这样笑过了。');
-  } else {
-    await cgSay('@bf', '……那我一个人玩会儿。');
-    await cgSay('旁白', '他撇撇嘴，装作不在意的样子。');
-  }
+  changeStat('passion', +10);
+  changeStat('stress', -10);
   cgHide();
+  // 强制刷新场景状态,避免结束后男主立绘意外出现(尤其在夜晚)
+  applyComputerPose();
+  applyDayNight();
   saveState();
 }
 function close2048() {
@@ -2684,6 +2732,14 @@ function bootGame() {
   if (!state.heroName) {
     showIntro();
     return;
+  }
+  // 白天且男主醒着 → 确保灯是开的
+  const mins = state.gameTime % (24*60);
+  const isDay = mins >= 6*60 && mins < 18*60;
+  if (isDay && !state.heroAsleep) {
+    state.lightsOn.living   = true;
+    state.lightsOn.bedroom  = true;
+    state.lightsOn.bathroom = true;
   }
   // 从存档恢复场景
   switchScene(state.scene);
