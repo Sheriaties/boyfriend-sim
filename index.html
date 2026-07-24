@@ -2294,6 +2294,7 @@ const INTERACTIONS = {
     changeStat('stress', -2);
   },
   winview: () => {
+    console.log('[winview] isNightMode=',isNightMode(),'heroAsleep=',state.heroAsleep,'gameTime=',state.gameTime);
     if (!isNightMode() && !state.heroAsleep) {
       openWindowGame();
     } else {
