@@ -1469,6 +1469,8 @@
   <div id="cg-overlay" class="cg-overlay">
     <div class="cg-image-wrap">
       <img class="cg-image" id="cg-image" src="" alt="" />
+      <!-- 烟花动画 canvas -->
+      <canvas id="fw-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;display:none;"></canvas>
       <svg class="cg-timer-ring" id="cg-timer" viewBox="0 0 40 40" style="display:none;">
         <circle class="track" cx="20" cy="20" r="17"></circle>
         <circle class="bar"   cx="20" cy="20" r="17"
@@ -3164,13 +3166,10 @@ async function triggerNightWindowStory() {
     await cgSay('@bf', '快了。再等一下。');
     await cgSay('旁白', '人群嘈嘈嚷嚷。你们两个站在一起，没有说话。');
 
-    // 2. 第一束烟花爆炸！切图片+加闪光动画
-    const cgImg = document.getElementById('cg-image');
-    cgImg.src = 'assets/cg_fireworks.png';
-    cgImg.classList.remove('fw-flash');
-    void cgImg.offsetWidth;
-    cgImg.classList.add('fw-flash');
-    await new Promise(r => setTimeout(r, 900));  // 等动画
+    // 2. 在 dark 图上播烟花动画（升起+爆炸），动画结束后再切图
+    await playFireworksAnimation(2200);
+    cgShow('assets/cg_fireworks.png');
+    await new Promise(r => setTimeout(r, 400));
 
     await cgSay('@bf', '……好看吧。');
     await cgSay('@bf', '前两天在网上看到说这个地方今晚有烟花……');
@@ -3264,6 +3263,104 @@ async function triggerNightWindowStory() {
     applyComputerPose();
     applyDayNight();
   }
+}
+
+// ============ 烟花 Canvas 动画 ============
+function playFireworksAnimation(durationMs = 2200) {
+  return new Promise(resolve => {
+    const canvas = document.getElementById('fw-canvas');
+    const wrap   = canvas.parentElement;
+    canvas.width  = wrap.offsetWidth  || 1280;
+    canvas.height = wrap.offsetHeight || 720;
+    canvas.style.display = 'block';
+    const ctx = canvas.getContext('2d');
+
+    // 定义几颗烟花（发射位置、颜色、延迟）
+    const rockets = [
+      { x: 0.5, delay: 200,  color: '#ffe066' },
+      { x: 0.3, delay: 600,  color: '#ff9966' },
+      { x: 0.7, delay: 700,  color: '#88ddff' },
+      { x: 0.2, delay: 1100, color: '#ffaacc' },
+      { x: 0.8, delay: 1200, color: '#aaffaa' },
+    ];
+    const particles = [];
+    const startTime = performance.now();
+
+    function spawnBurst(cx, cy, color) {
+      const count = 60 + Math.random() * 40;
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 / count) * i + Math.random() * 0.2;
+        const speed = 1.5 + Math.random() * 3.5;
+        particles.push({
+          x: cx, y: cy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          alpha: 1,
+          color,
+          r: 2 + Math.random() * 2.5,
+          decay: 0.012 + Math.random() * 0.01,
+        });
+      }
+    }
+
+    const rocketStates = rockets.map(() => ({ launched: false, done: false, y: null }));
+
+    function frame(now) {
+      const elapsed = now - startTime;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 发射火箭 + 爆炸
+      rockets.forEach((r, i) => {
+        if (elapsed >= r.delay && !rocketStates[i].launched) {
+          rocketStates[i].launched = true;
+          rocketStates[i].y = canvas.height;
+          rocketStates[i].targetY = canvas.height * (0.15 + Math.random() * 0.35);
+          rocketStates[i].x = canvas.width * r.x;
+        }
+        if (rocketStates[i].launched && !rocketStates[i].done) {
+          const s = rocketStates[i];
+          s.y -= 14;
+          // 画火箭尾迹
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = r.color;
+          ctx.globalAlpha = 0.9;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          if (s.y <= s.targetY) {
+            spawnBurst(s.x, s.y, r.color);
+            s.done = true;
+          }
+        }
+      });
+
+      // 粒子
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x  += p.vx;
+        p.y  += p.vy;
+        p.vy += 0.07;  // gravity
+        p.vx *= 0.97;
+        p.alpha -= p.decay;
+        if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.alpha;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      if (elapsed < durationMs || particles.length > 0) {
+        requestAnimationFrame(frame);
+      } else {
+        canvas.style.display = 'none';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        resolve();
+      }
+    }
+    requestAnimationFrame(frame);
+  });
 }
 
 // ============ 封面主界面 ============
