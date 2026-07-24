@@ -2682,16 +2682,38 @@ document.addEventListener('keydown', (e) => {
 
 // ============ 小鸟音游（旋律填空版）============
 // 音符颜色 + 音高
+// 6个音符：do re mi fa sol la（频率更丰富，更像真实音程）
 const BS_NOTE_DEFS = [
-  { sym:'♩', color:'rgba(255,180,60,0.85)',  freq:523.25 },  // do
-  { sym:'♪', color:'rgba(100,200,120,0.85)', freq:659.25 },  // mi
-  { sym:'♫', color:'rgba(100,160,255,0.85)', freq:783.99 },  // sol
-  { sym:'♬', color:'rgba(220,100,200,0.85)', freq:880.00 },  // la
+  { sym:'●', color:'rgba(255,120,60,0.9)',  freq:523.25 },  // do  C5
+  { sym:'●', color:'rgba(255,200,50,0.9)',  freq:587.33 },  // re  D5
+  { sym:'●', color:'rgba(100,210,80,0.9)',  freq:659.25 },  // mi  E5
+  { sym:'●', color:'rgba(60,180,255,0.9)',  freq:698.46 },  // fa  F5
+  { sym:'●', color:'rgba(140,100,255,0.9)', freq:783.99 },  // sol G5
+  { sym:'●', color:'rgba(255,80,180,0.9)',  freq:880.00 },  // la  A5
 ];
-// 预设旋律（关卡序列，每轮随机取一条或递增）
+// 预设旋律（改编自公有领域名曲片段，音符索引对应 do=0 re=1 mi=2 fa=3 sol=4 la=5）
+// 《欢乐颂》: mi mi fa sol sol fa mi re do do re mi mi re re
+// 《小星星》: do do sol sol la la sol fa fa mi mi re re do
+// 《玛丽有只小羊》: mi re do re mi mi mi re re re mi sol sol
+// 《生日歌》: do do re do fa mi  do do re do sol fa
 const BS_MELODIES = [
-  [0,1,2,3], [2,0,1,2], [1,3,0,2], [0,0,2,2], [3,1,2,0],
-  [0,1,2,3,2],[1,0,3,2,1],[2,3,1,0,3],[0,2,1,3,0,2],
+  // Level 1-2：简单4音序列（欢乐颂开头）
+  [2,2,3,4],       // mi mi fa sol
+  [4,3,2,1],       // sol fa mi re
+  [0,0,1,2],       // do do re mi
+  // Level 3-4：5音，带节奏跳跃
+  [2,2,3,4,4],     // mi mi fa sol sol
+  [0,0,4,4,5],     // do do sol sol la（小星星开头）
+  [5,5,4,3,2],     // la la sol fa mi
+  [2,1,0,1,2],     // mi re do re mi（玛丽有只小羊）
+  // Level 5-6：6音，接近完整乐句
+  [2,2,3,4,3,1],   // mi mi fa sol fa re（欢乐颂变体）
+  [0,0,4,4,5,4],   // do do sol sol la sol（小星星前6）
+  [2,1,0,1,2,2],   // mi re do re mi mi
+  // Level 7+：8音完整乐句
+  [2,2,3,4,4,3,2,1],  // 欢乐颂前8
+  [0,0,4,4,5,5,4,3],  // 小星星前8
+  [2,1,0,1,2,2,2,0],  // 玛丽有只小羊前8
 ];
 const BS = {
   score:0, level:1, lives:3, correct:0,
@@ -2709,15 +2731,23 @@ function bsAudio() {
   if (!BS.audioCtx) BS.audioCtx = new (window.AudioContext||window.webkitAudioContext)();
   return BS.audioCtx;
 }
-function bsBeep(freq, dur=0.14, vol=0.22, type='sine') {
+function bsBeep(freq, dur=0.16, vol=0.18, type='triangle') {
   try {
     const ctx = bsAudio();
+    // 主音：三角波（比正弦更亮更清晰）
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.connect(g); g.connect(ctx.destination);
     o.type = type; o.frequency.value = freq;
     g.gain.setValueAtTime(vol, ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
     o.start(); o.stop(ctx.currentTime+dur);
+    // 高八度泛音（正弦，量少）—— 叮声感
+    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.type = 'sine'; o2.frequency.value = freq * 2;
+    g2.gain.setValueAtTime(vol * 0.3, ctx.currentTime);
+    g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur*0.6);
+    o2.start(); o2.stop(ctx.currentTime+dur*0.6);
   } catch(e){}
 }
 
@@ -2857,17 +2887,11 @@ function closeBirdsong() {
 }
 
 function bsStartLevel() {
-  // 旋律长度随关卡增加 (4~8)
-  const len = Math.min(4 + Math.floor((BS.level-1)/2), 8);
-  // 生成随机旋律
-  BS.melody = [];
-  let prev = -1;
-  for (let i=0; i<len; i++) {
-    let r; do { r = Math.floor(Math.random()*4); } while(r===prev && len<=4);
-    BS.melody.push(r); prev=r;
-  }
-  // 随关卡加速
-  BS.beatMs = Math.max(350, 550 - (BS.level-1)*25);
+  // 按关卡选对应旋律（而不是随机，保证难度递增）
+  const idx = Math.min(BS.level - 1, BS_MELODIES.length - 1);
+  BS.melody = BS_MELODIES[idx];
+  // 随关卡加速（BPM 90→130）
+  BS.beatMs = Math.max(380, 600 - (BS.level-1)*30);
   bsBuildTrack(BS.melody);
   bsHud();
   bsHint('♪ 仔细听…', true);
@@ -2909,7 +2933,7 @@ function bsDemo2() {
     // 超时失败
     BS._timer = setTimeout(()=> {
       if (BS.phase === 'wait') bsFail();
-    }, BS.beatMs * 2.5 * fillCount + 400);
+    }, BS.beatMs * 1.5 * fillCount + 300);
   });
 }
 
@@ -2940,7 +2964,7 @@ function bsPlayerClick(e) {
   const idx = BS.targetNoteIdx + BS.playerNotes.length;
   const expected = BS.melody[idx];
   const elapsed = Date.now() - BS.waitStart;
-  const inWindow = elapsed < BS.beatMs * 1.8;
+  const inWindow = elapsed < BS.beatMs * 0.8;   // 收紧判定：0.8拍内点击才成功
 
   if (!inWindow) { bsFail(); return; }
 
