@@ -1304,8 +1304,8 @@
       <!-- 窗户 sprite（昼夜切换：尺寸位置独立） -->
       <img class="prop" id="prop-window" src="assets/window_day.png" alt="" data-state="day" />
       <!-- 窗户热区（对齐 prop-window[data-state="day"]: right:20% width:32%） -->
-      <div class="hotspot" id="window-hotspot" data-action="window"
-           style="right:20%; top:30%; width:32%; height:48%;">
+      <div class="hotspot" id="window-hotspot" data-action="winview"
+           style="right:20%; top:30%; width:20%; height:42%;">
         <span class="hotspot-label">🪟 看风景</span>
       </div>
       <!-- 吊灯 sprite -->
@@ -2293,7 +2293,7 @@ const INTERACTIONS = {
     changeStat('love', +2);
     changeStat('stress', -2);
   },
-  window: () => {
+  winview: () => {
     if (!isNightMode() && !state.heroAsleep) {
       openWindowGame();
     } else {
