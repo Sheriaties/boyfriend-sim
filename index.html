@@ -2816,18 +2816,35 @@ function bsJudgeTxt(text, color) {
 }
 
 // ==== 游戏流程 ====
+// BGM audio element (reuse)
+let bsBgmAudio = null;
+function bsBgmPlay() {
+  if (!bsBgmAudio) {
+    bsBgmAudio = new Audio('assets/birdsong/bgm.mp3');
+    bsBgmAudio.loop = true;
+    bsBgmAudio.volume = 0.35;
+  }
+  bsBgmAudio.currentTime = 0;
+  bsBgmAudio.play().catch(()=>{});
+}
+function bsBgmStop() {
+  if (bsBgmAudio) { bsBgmAudio.pause(); bsBgmAudio.currentTime = 0; }
+}
+
 function openBirdsong() {
   BS.score=0; BS.level=1; BS.lives=3; BS.correct=0;
   document.getElementById('bs-result').classList.remove('show');
   bsHud();
   bsBird('idle'); bsGirl('idle');
   bsHint('', false);
+  bsBgmPlay();
   document.getElementById('birdsong-overlay').classList.add('show');
   // 点击全屏判定
   document.getElementById('birdsong-overlay').addEventListener('click', bsPlayerClick);
   setTimeout(()=> bsStartLevel(), 500);
 }
 function closeBirdsong() {
+  bsBgmStop();
   document.getElementById('birdsong-overlay').classList.remove('show');
   document.getElementById('birdsong-overlay').removeEventListener('click', bsPlayerClick);
   bsBird('idle'); bsGirl('idle');
