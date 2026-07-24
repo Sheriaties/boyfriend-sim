@@ -430,6 +430,30 @@
     from { opacity: 0; }
     to   { opacity: 1; }
   }
+  /* 烟花闪光：从底部升起+屏幕爆闪 */
+  @keyframes fwFlash {
+    0%  { opacity:0; transform:scaleY(0.1) translateY(60%); filter:brightness(0.2); }
+    30% { opacity:1; transform:scaleY(1)   translateY(0);    filter:brightness(3); }
+    60% { opacity:1; filter:brightness(1.8); }
+    100%{ opacity:1; filter:brightness(1); }
+  }
+  .fw-flash { animation: fwFlash 1.2s cubic-bezier(.2,.8,.4,1) forwards; }
+  .fw-click-hint {
+    position: absolute;
+    bottom: 18%; left: 50%; transform: translateX(-50%);
+    background: rgba(255,255,255,0.18);
+    border: 2px solid rgba(255,255,255,0.6);
+    color: #fff;
+    padding: 0.6vw 2vw;
+    border-radius: 20px;
+    font-size: 1.1vw;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    z-index: 6;
+    pointer-events: none;
+    animation: blink 1.2s infinite;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
   .bad-end-inner {
     display: flex;
     flex-direction: column;
@@ -3084,24 +3108,92 @@ async function triggerNightWindowStory() {
   const pick = await cgChoose(['好呀，走吧 ✨', '……改天吧'], 0);
 
   if (pick === 0 || pick === null) {
-    // 一起去看烟花
-    cgShow('assets/cg_fireworks.png');
-    await new Promise(r => setTimeout(r, 400));
+    // === 烟花剧情完整版 ===
+
+    // 1. 极暗的等待场景
+    cgShow('assets/cg_fireworks_dark.png');
+    await new Promise(r => setTimeout(r, 600));
     await cgSay('旁白', '你们去了。');
-    await cgSay('旁白', '烟花在夜空中炸开，金色的火光落在他脸上。');
+    await cgSay('旁白', '站在那里，天空什么都没有。很黑。');
+    await cgSay('你', '……烟花什么时候开始啊。');
+    await cgSay('@bf', '快了。再等一下。');
+    await cgSay('旁白', '人群嘈嘈嚷嚷。你们两个站在一起，没有说话。');
+
+    // 2. 第一束烟花爆炸！切图片+加闪光动画
+    const cgImg = document.getElementById('cg-image');
+    cgImg.src = 'assets/cg_fireworks.png';
+    cgImg.classList.remove('fw-flash');
+    void cgImg.offsetWidth;
+    cgImg.classList.add('fw-flash');
+    await new Promise(r => setTimeout(r, 900));  // 等动画
+
     await cgSay('@bf', '……好看吧。');
-    await cgSay('你', '嗯。');
-    await cgSay('旁白', '你没告诉他你其实不是在看烟花。');
-    changeStat('love', +12);
-    changeStat('passion', +8);
-    changeStat('stress', -5);
-    changeStat('understanding', +5);
+    await cgSay('@bf', '前两天在网上看到说这个地方今晚有烟花……');
+    await cgSay('@bf', '就一直好想和你一起来看。');
+    await cgSay('你', '……嗯。');
+    changeStat('love', +8);
+    changeStat('passion', +5);
+
+    // 3. 切女主视角——男主仰望烟花的特写
+    cgShow('assets/cg_fireworks_pov.png');
+    await new Promise(r => setTimeout(r, 400));
+    await cgSay('旁白', '满天都是烟花。');
+    await cgSay('旁白', '周围的人也都在叫嚷。');
+    await cgSay('旁白', '但是我的心跳声太大了，让我听不清其他声音。');
+    await cgSay('旁白', '眼睛也没办法从他脸上离开。');
+
+    // 4. 男主视线转过来——切回头图，提示可以点击
+    cgShow('assets/cg_fireworks_pov_turn.png');
+    await new Promise(r => setTimeout(r, 500));
+
+    // 在 CG 上显示"点击他"提示，同时设定计时器
+    const hint = document.createElement('div');
+    hint.className = 'fw-click-hint';
+    hint.textContent = '……（点击他）';
+    document.getElementById('cg-overlay').appendChild(hint);
+
+    // 等待玩家点击或 5 秒超时
+    const kissChoice = await new Promise(resolve => {
+      const handler = (e) => {
+        if (e.target.closest('.cg-continue-hint') || e.target.closest('.fw-click-hint')) return;
+        clearTimeout(timer);
+        document.getElementById('cg-overlay').removeEventListener('click', handler);
+        hint.remove();
+        resolve('click');
+      };
+      const timer = setTimeout(() => {
+        document.getElementById('cg-overlay').removeEventListener('click', handler);
+        hint.remove();
+        resolve('timeout');
+      }, 5000);
+      document.getElementById('cg-overlay').addEventListener('click', handler);
+    });
+
+    if (kissChoice === 'click') {
+      // 5a. 玩家点了——接吻 CG
+      cgShow('assets/cg_kiss_fw.png');
+      await new Promise(r => setTimeout(r, 500));
+      await cgSay('旁白', '手上在流汗。');
+      await cgSay('旁白', '人也在发抖。');
+      await cgSay('旁白', '但是就吻在一起了。');
+      changeStat('love', +15);
+      changeStat('passion', +15);
+      changeStat('understanding', +10);
+    } else {
+      // 5b. 超时没点——他收回视线，只加好感
+      await cgSay('旁白', '他看了你一眼。');
+      await cgSay('旁白', '然后把视线收了回去，继续看烟花。');
+      await cgSay('@bf', '……你没在看烟花。');
+      changeStat('love', +10);
+      changeStat('passion', +5);
+    }
+
     state.nightWindowDone = true;
+    changeStat('stress', -8);
     saveState();
     cgHide();
     applyComputerPose();
     applyDayNight();
-    // 推进时间（夜晚出去看烟花）
     const d = jumpToNextMorning();
     setTimeout(()=>showDialog('系统', `——第 ${d} 天 07:00——`), 500);
   } else {
