@@ -2223,8 +2223,9 @@ const INTERACTIONS = {
   computer: (evt) => {
     const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="computer"]');
     if (state.atComputer) {
-      // 已经坐着 → 点一下起来
+      // 已经在电脑前 → 起身
       state.atComputer = false;
+      state.computerActivity = null;
       applyComputerPose();
       showDialog('@bf', '嗯，先歇会儿。');
       changeStat('stress', -2);
@@ -2234,8 +2235,38 @@ const INTERACTIONS = {
     showMenu(anchor, [
       {
         label: '🎮 玩游戏',
-        onClick: () => {
-          open2048();
+        onClick: (evt2) => {
+          // 先问要不要一起玩
+          const anchor2 = document.querySelector('[data-action="computer"]');
+          showMenu(anchor2, [
+            {
+              label: '一起玩！',
+              onClick: () => {
+                state.atComputer = true;
+                state.computerActivity = 'gaming';
+                applyComputerPose();
+                showDialog('@bf', '你来啦？那你先坐！我教你。');
+                changeStat('love', +3);
+                changeStat('passion', +2);
+                saveState();
+                open2048();
+              }
+            },
+            {
+              label: '你自己玩吧',
+              onClick: () => {
+                state.atComputer = true;
+                state.computerActivity = 'gaming';
+                applyComputerPose();
+                showDialog('@bf', '好吧……那你在旁边陪我。');
+                changeStat('love', +1);
+                changeStat('stress', -3);
+                changeStat('passion', +3);
+                saveState();
+                advanceTime();
+              }
+            },
+          ]);
         }
       },
       {
@@ -3209,7 +3240,7 @@ async function triggerNightWindowStory() {
         document.getElementById('cg-overlay').removeEventListener('click', handler);
         hint.remove();
         resolve('timeout');
-      }, 5000);
+      }, 3000);
       document.getElementById('cg-overlay').addEventListener('click', handler);
     });
 
@@ -3225,9 +3256,9 @@ async function triggerNightWindowStory() {
       changeStat('understanding', +10);
     } else {
       // 5b. 超时没点——他收回视线，只加好感
-      await cgSay('旁白', '他看了你一眼。');
-      await cgSay('旁白', '然后把视线收了回去，继续看烟花。');
-      await cgSay('@bf', '……你没在看烟花。');
+      await cgSay('旁白', '他向你投来了一眼。');
+      await cgSay('旁白', '好像带着一点期待和一点失落。');
+      await cgSay('@bf', '……你好像没在看烟花，你在看什么呢？');
       changeStat('love', +10);
       changeStat('passion', +5);
     }
