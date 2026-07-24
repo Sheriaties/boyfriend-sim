@@ -2313,11 +2313,21 @@ const INTERACTIONS = {
     changeStat('stress', -2);
   },
   winview: () => {
-    console.log('[winview] isNightMode=',isNightMode(),'heroAsleep=',state.heroAsleep,'gameTime=',state.gameTime);
     if (!isNightMode() && !state.heroAsleep) {
-      openWindowGame();
+      // 白天：小鸟音游（或已看过烟花后的温柔互动）
+      if (state.nightWindowDone) {
+        // 看过烟花后的积极互动
+        triggerDaytimeWindowAfterFireworks();
+      } else {
+        openWindowGame();
+      }
     } else {
-      triggerNightWindowStory();
+      // 夜晚：只触发一次完整烟花剧情，之后走短对白
+      if (state.nightWindowDone) {
+        triggerNightWindowRepeat();
+      } else {
+        triggerNightWindowStory();
+      }
     }
   },
   leftExit: () => { /* deprecated, kept for legacy */ },
@@ -3074,6 +3084,41 @@ function openWindowGame() {
 
 
 // ============ 夜晚窗户剧情 ============
+// 白天看过烟花后再点窗户：温柔日常互动
+const DAYTIME_WINDOW_LINES = [
+  ['@bf', '……你又在看风景啊。', '旁白', '他走过来靠在你身边，顺着你的视线看出去。'],
+  ['@bf', '今天天气不错。', '你', '嗯。', '@bf', '要不要出去转转？'],
+  ['旁白', '你站在窗边，他从厨房探出头来。', '@bf', '看什么呢？来帮我。'],
+  ['@bf', '……那天的烟花。', '你', '嗯？', '@bf', '记得吗。还想和你再去一次。'],
+  ['旁白', '阳光很好。他站到你身后，把下巴搁在你头顶。', '@bf', '在想什么。'],
+];
+async function triggerDaytimeWindowAfterFireworks() {
+  const lines = DAYTIME_WINDOW_LINES[Math.floor(Math.random() * DAYTIME_WINDOW_LINES.length)];
+  cgShow('assets/cg_hug_window.png');
+  for (let i = 0; i < lines.length; i += 2) {
+    await cgSay(lines[i], lines[i+1]);
+  }
+  changeStat('love', +3);
+  changeStat('stress', -2);
+  cgHide();
+}
+
+// 夜晚看过烟花后再点窗户：短暖互动
+const NIGHT_WINDOW_REPEAT_LINES = [
+  ['旁白', '你又站到了窗边。', '@bf', '……又在发呆？', '旁白', '他悄悄拉住你的手。'],
+  ['@bf', '怎么了。', '你', '没什么，就是想站一会儿。', '@bf', '那我陪你。'],
+  ['旁白', '夜晚的城市灯光好安静。', '@bf', '……喜欢看吗，这些灯。', '你', '喜欢。', '@bf', '我也喜欢。'],
+];
+async function triggerNightWindowRepeat() {
+  const lines = NIGHT_WINDOW_REPEAT_LINES[Math.floor(Math.random() * NIGHT_WINDOW_REPEAT_LINES.length)];
+  cgShow('assets/cg_night_city.png');
+  for (let i = 0; i < lines.length; i += 2) {
+    await cgSay(lines[i], lines[i+1]);
+  }
+  changeStat('love', +2);
+  cgHide();
+}
+
 async function triggerNightWindowStory() {
   // 城景独白
   cgShow('assets/cg_night_city.png');
@@ -3190,19 +3235,32 @@ async function triggerNightWindowStory() {
 
     state.nightWindowDone = true;
     changeStat('stress', -8);
+    // 回来时已是次日早上，男主该醒了
+    state.heroAsleep = false;
+    const d = jumpToNextMorning();
+    // jumpToNextMorning 内会调 applyDayNight，再显式开灯
+    state.lightsOn.living = true;
+    state.lightsOn.bedroom = true;
+    state.lightsOn.bathroom = true;
     saveState();
     cgHide();
+    applyLights();
     applyComputerPose();
     applyDayNight();
-    const d = jumpToNextMorning();
     setTimeout(()=>showDialog('系统', `——第 ${d} 天 07:00——`), 500);
   } else {
     await cgSay('@bf', '……好。下次。');
     await cgSay('旁白', '他轻轻松开你，转身去倒了杯水。');
     changeStat('love', +3);
     state.nightWindowDone = true;
+    // 这里不跳日，但场景状态要正常恢复
+    state.heroAsleep = false;
+    state.lightsOn.living = true;
+    state.lightsOn.bedroom = true;
+    state.lightsOn.bathroom = true;
     saveState();
     cgHide();
+    applyLights();
     applyComputerPose();
     applyDayNight();
   }
