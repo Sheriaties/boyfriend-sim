@@ -1482,15 +1482,10 @@
     <div class="bs-girl-area">
       <img class="bs-girl" id="bs-girl" src="assets/birdsong/girl_idle_qpx.png" alt="" />
     </div>
-    <!-- 判定圈 -->
-    <div class="bs-hit-ring" id="bs-hit-ring" onclick="bsHit()">
-      <svg class="bs-timer-svg" id="bs-timer-svg" viewBox="0 0 100 100">
-        <circle class="track" cx="50" cy="50" r="44"></circle>
-        <circle class="bar" id="bs-timer-bar" cx="50" cy="50" r="44"
-                stroke-dasharray="276.5" stroke-dashoffset="0"></circle>
-      </svg>
-      <span class="bs-hit-label" id="bs-hit-label">♪</span>
-    </div>
+    <!-- 音符轨道 -->
+    <div class="bs-track" id="bs-track"></div>
+    <!-- 提示文字 -->
+    <div class="bs-hint" id="bs-hint"></div>
     <!-- 结果面板 -->
     <div class="bs-result" id="bs-result">
       <div class="bs-result-box">
