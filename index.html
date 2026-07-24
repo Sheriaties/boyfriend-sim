@@ -1370,6 +1370,9 @@
       <img class="character" id="hero-living"
            src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
            style="left: 50%; height: 62%;" />
+      <!-- 沙发坐姿（交互后显示，默认隐藏） -->
+      <img class="prop" id="prop-hero-sofa" src="assets/characters/hero_sofa.png" alt=""
+           style="right:3%; bottom:6%; width:34%; display:none; z-index:11;" />
       <!-- 上楼去卧室 -->
       <div class="nav-arrow up" data-nav="bedroom"><span class="label">去卧室</span></div>
       <!-- 右上：外出 -->
@@ -1410,6 +1413,10 @@
       <img class="character" id="hero-bathroom"
            src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
            style="left: 78%; height: 52%; bottom: 6%;" />
+      <!-- 厕所交互姿势（默认隐藏，交互后显示） -->
+      <img class="prop" id="prop-hero-toilet"  src="assets/characters/hero_toilet.png"  alt="" style="left:6%;  bottom:6%; width:26%; display:none; z-index:11;" />
+      <img class="prop" id="prop-hero-sink"    src="assets/characters/hero_sink.png"    alt="" style="left:35%; bottom:5%; width:30%; display:none; z-index:11;" />
+      <img class="prop" id="prop-hero-shower"  src="assets/characters/hero_shower.png"  alt="" style="right:4%; bottom:5%; width:30%; display:none; z-index:11;" />
       <!-- 返回客厅 -->
       <div class="nav-arrow left" data-nav="living"><span class="label">回客厅</span></div>
     </div>
@@ -1840,6 +1847,30 @@ function applyDayNight() {
     }
   }
 }
+// 沙发姿势切换（参考 applyComputerPose 机制）
+function applySofaPose(active) {
+  const sofaProp  = document.getElementById('prop-hero-sofa');
+  const heroLiving = document.getElementById('hero-living');
+  if (!sofaProp) return;
+  if (active && !state.heroAsleep) {
+    sofaProp.style.display = 'block';
+    if (heroLiving) heroLiving.style.display = 'none';
+  } else {
+    sofaProp.style.display = 'none';
+    if (heroLiving && !state.heroAsleep && !state.atComputer) heroLiving.style.display = '';
+  }
+}
+// 厕所姿势切换：active = 'toilet'|'sink'|'shower'|null
+function applyBathroomPose(active) {
+  const ids = ['toilet','sink','shower'];
+  const heroB = document.getElementById('hero-bathroom');
+  ids.forEach(id => {
+    const el = document.getElementById(`prop-hero-${id}`);
+    if (el) el.style.display = (active === id && !state.heroAsleep) ? 'block' : 'none';
+  });
+  if (heroB) heroB.style.display = (active || state.heroAsleep) ? 'none' : '';
+}
+
 function applyComputerPose() {
   const seated = state.scene === 'living' && state.atComputer;
   // 根据活动类型选 sprite
@@ -2180,8 +2211,10 @@ function switchScene(name) {
   if (target) {
     target.classList.add('active');
     state.scene = name;
-    // 离开客厅时，坐姿复位
-    if (name !== 'living') state.atComputer = false;
+    // 离开客厅：电脑坐姿复位、沙发姿势复位
+    if (name !== 'living') { state.atComputer = false; applySofaPose(false); }
+    // 离开厕所：厕所姿势复位
+    if (name !== 'bathroom') { applyBathroomPose(null); }
     applyComputerPose();
     applyDayNight();
     saveState();
@@ -2314,9 +2347,11 @@ const INTERACTIONS = {
     ]);
   },
   sofa: () => {
+    applySofaPose(true);
     showDialog('@bf', '过来陪我坐一会儿嘛～');
     changeStat('love', +3);
     changeStat('stress', -3);
+    setTimeout(() => applySofaPose(false), 4000);
   },
   bed: (evt) => {
     const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="bed"]');
@@ -2408,18 +2443,24 @@ const INTERACTIONS = {
     ]);
   },
   toilet: () => {
+    applyBathroomPose('toilet');
     showDialog('@bf', '……你别看啦！');
     changeStat('love', -1);
+    setTimeout(() => applyBathroomPose(null), 4000);
   },
   sink: () => {
+    applyBathroomPose('sink');
     showDialog('@bf', '洗把脸清醒一下～');
     changeStat('stress', -3);
+    setTimeout(() => applyBathroomPose(null), 4000);
   },
   shower: () => {
+    applyBathroomPose('shower');
     showDialog('@bf', '要一起洗吗？（脸红）');
     changeStat('love', +4);
     changeStat('passion', +5);
     changeStat('stress', -3);
+    setTimeout(() => applyBathroomPose(null), 4000);
   },
   chip: () => {
     state.chipCount = (state.chipCount || 0) + 1;
