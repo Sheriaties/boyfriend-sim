@@ -1881,8 +1881,10 @@ function applyComputerPose() {
   };
   const src = spriteMap[state.computerActivity] || 'assets/characters/hero_computer.png';
   const workingEl = document.getElementById('prop-hero-working');
-  if (workingEl) workingEl.src = src;
-  workingEl.style.display = seated ? 'block' : 'none';
+  if (workingEl) {
+    workingEl.src = src;
+    workingEl.style.display = seated ? 'block' : 'none';
+  }
   document.getElementById('prop-computer').style.display = seated ? 'none' : 'block';
   // If hero is asleep, keep hero-living hidden regardless of seated state
   if (state.heroAsleep) {
@@ -2381,7 +2383,9 @@ const INTERACTIONS = {
     changeStat('stress', -2);
   },
   winview: () => {
-    if (!isNightMode() && !state.heroAsleep) {
+    const _wvMins = state.gameTime % (24*60);
+    const _wvIsDay = _wvMins >= 6*60 && _wvMins < 18*60;
+    if (_wvIsDay && !state.heroAsleep) {
       // 白天：小鸟音游（或已看过烟花后的温柔互动）
       if (state.nightWindowDone) {
         // 看过烟花后的积极互动
@@ -2492,7 +2496,7 @@ const INTERACTIONS = {
 
 // ============ 事件绑定 ============
 // 哪些 action 不推进时间（弹菜单/切换姿势本身/摸玩偶）
-const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer','goOut','bed','bunny','penguin','chip','window']);
+const NO_TIME_ACTIONS = new Set(['hero','lamp','leftExit','computer','goOut','bed','bunny','penguin','chip','winview']);
 // 男主睡着时被禁用的 action（需要他在场的日常互动）
 const NEEDS_HERO_ACTIONS = new Set(['sofa','chip']);
 const HERO_ASLEEP_PLACEHOLDER = {
@@ -2890,7 +2894,7 @@ function bsHint(text, show=true) {
 function bsHud() {
   document.getElementById('bs-score-num').textContent = BS.score;
   document.getElementById('bs-level-label').textContent = `第 ${BS.level} 关`;
-  document.getElementById('bs-lives-label').textContent = '❤ '.repeat(BS.lives).trim() + ' 🖤'.repeat(3-BS.lives).trim();
+  document.getElementById('bs-lives-label').textContent = '❤ '.repeat(BS.lives) + '🖤 '.repeat(3 - BS.lives);
 }
 
 // 构建音符槽轨道
@@ -2990,6 +2994,12 @@ function closeBirdsong() {
     changeStat('love', Math.min(bonus, 25));
     changeStat('stress', -Math.min(Math.floor(bonus/2), 12));
     if (bonus >= 15) changeStat('understanding', +3);
+  }
+  // 5 关彩蛋：在回到游戏后触发男主对白
+  if (BS.correct >= 5 && !state.birdComboEgg) {
+    state.birdComboEgg = true;
+    saveState();
+    setTimeout(()=>{ showDialog('@bf','你跟小鸟唱歌唱得好开心啊……'); changeStat('love',+15); }, 500);
   }
   advanceTime(3);
 }
@@ -3141,11 +3151,6 @@ function bsShowResult() {
   document.getElementById('bs-result-stats').innerHTML =
     `得分：<b>${BS.score}</b>&nbsp;&nbsp; 通关：${BS.correct} 关`;
   document.getElementById('bs-result').classList.add('show');
-  if (BS.correct >= 5 && !state.birdComboEgg) {
-    state.birdComboEgg = true;
-    closeBirdsong();
-    setTimeout(()=>{ showDialog('@bf','你跟小鸟唱歌唱得好开心啊……'); changeStat('love',+15); }, 500);
-  }
 }
 
 function openWindowGame() {
@@ -3324,11 +3329,7 @@ async function triggerNightWindowStory() {
     await cgSay('旁白', '他轻轻松开你，转身去倒了杯水。');
     changeStat('love', +3);
     state.nightWindowDone = true;
-    // 这里不跳日，但场景状态要正常恢复
-    state.heroAsleep = false;
-    state.lightsOn.living = true;
-    state.lightsOn.bedroom = true;
-    state.lightsOn.bathroom = true;
+    // 不跳日，heroAsleep 保持原状态不变
     saveState();
     cgHide();
     applyLights();
