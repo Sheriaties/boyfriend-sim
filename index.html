@@ -1264,19 +1264,18 @@
   /* 两人小模型 */
   .mall-couple {
     position: absolute;
-    bottom: 20%;
-    height: 32%;
-    display: flex;
-    gap: 0.4vw;
+    bottom: 18%;
+    height: 38%;
+    display: block;
     transform: translateX(0);
     transition: transform 0.05s linear;
     pointer-events: none;
     filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
   }
-  .mall-couple img {
+  .mall-couple-img {
     height: 100%;
     width: auto;
-    image-rendering: auto;
+    image-rendering: pixelated;
   }
   /* 玩家的判定圈（跟随鼠标 + 被强制左飘） */
   .mall-cursor {
@@ -1641,8 +1640,7 @@
       </div>
       <!-- 两人小模型（跟着走） -->
       <div class="mall-couple" id="mall-couple">
-        <img class="mall-heroine" src="assets/characters/heroine_idle.png" alt="女主" />
-        <img class="mall-hero"    src="assets/characters/hero_idle.png"    alt="男主" />
+        <img class="mall-couple-img" src="assets/couple_walk_a.png" alt="两人走路" />
       </div>
     </div>
     <!-- 玩家用鼠标控制的判定圈：会被强制左飘 -->

@@ -160,39 +160,59 @@ def gen_bg_bedroom_empty():
     )
 
 def gen_couple_walk(frame: str):
-    """走路循环帧（侧视图，朝左走）。frame='a' 左脚在前；'b' 右脚在前。
-       'a' 是原始基准帧（用户已认可），'b' 用 'a' 作参考保持一致性。"""
+    """走路（侧视图，朝左走）。当前只用 frame='a' 做单帧静态版。"""
     if frame == 'a':
         gen(
             prompt=(
-                "Two chibi pixel-art game characters walking side by side in SIDE VIEW, "
-                "BOTH FACING LEFT (moving to the left of the frame). Full body visible. "
+                "Reproduce the SAME TWO CHARACTERS as in the reference image (same girl in cherry-red tank "
+                "top with low ponytail, same boy in blue hoodie with black-framed glasses, same outfits, "
+                "same colors, same proportions, same walking-together side view facing LEFT). "
                 ""
-                "CHARACTER A (LEFT, in FRONT — closer to camera): "
-                "A cute young girl with a long low ponytail (dark brown hair with subtle highlights). "
-                "Wearing a CHERRY-RED tank top (vivid cherry red — not wine, not pink). "
-                "Black long pants. No glasses. Slender, chibi proportions. "
-                "Pretty face with big anime eyes, soft pink blushing cheeks, tiny cute smile. "
+                "But upgrade the art quality significantly: "
+                "- HIGHER resolution pixel art with much finer detail (denser pixel grid, softer anti-aliasing) "
+                "- SOFTER, ROUNDER, CUTER face designs — bigger sparkly anime-style eyes, gentle rounded cheeks "
+                "  with tiny pink blush, small warm smiles "
+                "- More refined hair strand detail (subtle highlights and flowing shape) "
+                "- Cleaner cloth folds on the tank top and hoodie "
+                "- Warmer, more saturated color palette while keeping colors identical to reference "
+                "  (cherry-red tank, medium blue hoodie, black pants) "
+                "- Chibi proportions slightly more stylized (~4-4.5 heads tall) — cute and heartwarming "
                 ""
-                "CHARACTER B (RIGHT, one step BEHIND): "
-                "A cute young man in a BLUE HOODIE (hood down, unzipped a bit), BLACK pants, "
-                "BLACK-FRAMED GLASSES, short dark hair with slight fluff. "
-                "Slightly taller than the girl. Warm friendly smile. "
+                "Both characters walking side by side facing LEFT, mid-stride, "
+                "girl slightly in front (closer to camera), boy one step behind on the right. "
+                "They look happy and relaxed, possibly gently holding hands. "
                 ""
-                "They are walking together, arms swinging naturally, holding hands lightly if possible. "
-                "The girl's LEFT foot is forward and her right foot is back (mid-stride). "
-                "The boy's LEFT foot is forward and his right foot is back (mid-stride). "
+                "Style reference tone: 'high-detail pixel art visual novel character sprite, "
+                "modern Stardew Valley portrait mod quality, chibi and cute'. "
                 ""
-                "Style: HIGH-DETAIL PIXEL ART, refined and delicate (NOT low-res chunky pixels), "
-                "chibi proportions (~4.5 heads tall), soft rounded outlines, warm saturated palette, "
-                "cute anime-style faces. FULLY TRANSPARENT BACKGROUND (alpha channel). "
-                "No shadow on ground. No text. Just the two-character pair as a game sprite. "
-                "Similar polish and cuteness to modern Stardew Valley portrait mods."
+                "FULLY TRANSPARENT BACKGROUND (alpha channel). No shadow on ground. No text. "
+                "Just the two-character pair as a game sprite."
             ),
             out_path=ASSETS / "couple_walk_a.png",
-            refs=[CHARS / "heroine_idle.png", CHARS / "hero_idle.png"],
+            refs=[ASSETS / "couple_walk_a.png"],
         )
     else:
+        gen(
+            prompt=(
+                "Reproduce the same two chibi pixel-art characters EXACTLY as in the reference image "
+                "(same girl in cherry-red tank top with low ponytail, same boy in blue hoodie with glasses). "
+                "Same art style, same proportions, same colors, same faces, same outfits. "
+                ""
+                "The ONLY differences from the reference: "
+                "(1) Both characters' LEG POSITIONS are SWAPPED — this is the NEXT frame of a walk cycle. "
+                "The girl's RIGHT foot is now forward and her left foot is back (mid-stride). "
+                "The boy's RIGHT foot is now forward and his left foot is back (mid-stride). "
+                "(2) Their arms swing slightly in the opposite direction accordingly. "
+                ""
+                "Everything else (facing direction — still facing LEFT, camera angle, character designs, "
+                "hair, outfits, faces, expressions, art style, resolution) MUST match the reference image. "
+                ""
+                "HIGH-DETAIL PIXEL ART, refined and delicate, cute anime-style faces. "
+                "FULLY TRANSPARENT BACKGROUND. No shadow. No text."
+            ),
+            out_path=ASSETS / "couple_walk_b.png",
+            refs=[ASSETS / "couple_walk_a.png"],
+        )
         gen(
             prompt=(
                 "Reproduce the same two chibi pixel-art characters EXACTLY as in the reference image "
