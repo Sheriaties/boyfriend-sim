@@ -1810,15 +1810,8 @@ function applyDayNight() {
     state.lightsOn.bedroom = false;
     state.lightsOn.bathroom = false;
     state.autoLightsAdjusted = true;
-    // 入夜清理所有姿势 sprite（沙发/厕所），避免"他睡了但还坐在沙发上"
-    clearTimeout(sofaPoseTimer); sofaPoseTimer = null;
-    clearTimeout(bathroomPoseTimer); bathroomPoseTimer = null;
-    applySofaPose(false);
-    applyBathroomPose(null);
-    // 也把电脑坐姿收掉
-    state.atComputer = false;
-    state.computerActivity = null;
-    applyComputerPose();
+    // 入夜先清所有姿势，避免"他睡了但还坐在沙发上"
+    clearAllPoses();
     applyLights();
     saveState();
     setTimeout(() => showDialog('@bf', '好困了，去睡觉觉啦宝宝……'), 300);
@@ -1834,78 +1827,93 @@ function applyDayNight() {
       saveState();
     }
   }
-  // 男主是否睡着决定立绘显隐（跨越 22:00 → 07:00 之后依然睡）
+  // 男主是否睡着影响立绘显隐 → 委托给 poseController
   document.body.classList.toggle('hero-asleep', !!state.heroAsleep);
-  const heroLiving = document.getElementById('hero-living');
-  const heroBedroom = document.getElementById('hero-bedroom');
-  const heroBathroom = document.getElementById('hero-bathroom');
-  if (heroLiving && heroBedroom) {
-    if (state.heroAsleep) {
-      heroLiving.style.display = 'none';
-      heroBedroom.style.display = 'none';
-      if (heroBathroom) heroBathroom.style.display = 'none';
-    } else if (!state.atComputer) {
-      heroLiving.style.display = '';
-      heroBedroom.style.display = '';
-      if (heroBathroom) heroBathroom.style.display = '';
-    }
-  }
+  _renderPose(currentPose);
 }
-// 沙发姿势切换（参考 applyComputerPose 机制）
-let sofaPoseTimer = null;
-function applySofaPose(active) {
-  const sofaProp  = document.getElementById('prop-hero-sofa');
-  const heroLiving = document.getElementById('hero-living');
-  if (!sofaProp) return;
-  if (active && !state.heroAsleep) {
-    sofaProp.style.display = 'block';
-    if (heroLiving) heroLiving.style.display = 'none';
-  } else {
-    sofaProp.style.display = 'none';
-    if (heroLiving && !state.heroAsleep && !state.atComputer) heroLiving.style.display = '';
-  }
-}
-function scheduleSofaClear(ms) {
-  clearTimeout(sofaPoseTimer);
-  sofaPoseTimer = setTimeout(() => { sofaPoseTimer = null; applySofaPose(false); }, ms);
-}
-// 厕所姿势切换：active = 'toilet'|'sink'|'shower'|null
-let bathroomPoseTimer = null;
-function applyBathroomPose(active) {
-  const ids = ['toilet','sink','shower'];
-  const heroB = document.getElementById('hero-bathroom');
-  ids.forEach(id => {
-    const el = document.getElementById(`prop-hero-${id}`);
-    if (el) el.style.display = (active === id && !state.heroAsleep) ? 'block' : 'none';
-  });
-  if (heroB) heroB.style.display = (active || state.heroAsleep) ? 'none' : '';
-}
-function scheduleBathroomClear(ms) {
-  clearTimeout(bathroomPoseTimer);
-  bathroomPoseTimer = setTimeout(() => { bathroomPoseTimer = null; applyBathroomPose(null); }, ms);
-}
+// ============ 统一姿势管理器 ============
+// 所有 sprite 切换（沙发/厕所/电脑）走这里，规则：
+// - setPose(name) 先清撞车，再显示新 sprite，2 秒后自动收
+// - clearAllPoses() 立刻收所有 sprite（场景切换/入夜/结局用）
+const POSE_HOLD_MS = 2000;
+let currentPose = null;       // 'sofa'|'toilet'|'sink'|'shower'|'gaming'|'watching'|'working'|null
+let poseTimer = null;
 
-function applyComputerPose() {
-  const seated = state.scene === 'living' && state.atComputer;
-  // 根据活动类型选 sprite
-  const spriteMap = {
+function _renderPose(name) {
+  // 沙发
+  const sofaProp = document.getElementById('prop-hero-sofa');
+  if (sofaProp) sofaProp.style.display = (name === 'sofa' && !state.heroAsleep) ? 'block' : 'none';
+  // 厕所三姿势
+  ['toilet','sink','shower'].forEach(id => {
+    const el = document.getElementById(`prop-hero-${id}`);
+    if (el) el.style.display = (name === id && !state.heroAsleep) ? 'block' : 'none';
+  });
+  // 电脑坐姿
+  const computerSprite = {
     gaming:   'assets/characters/hero_gaming.png',
     watching: 'assets/characters/hero_watching.png',
     working:  'assets/characters/hero_working.png',
   };
-  const src = spriteMap[state.computerActivity] || 'assets/characters/hero_computer.png';
   const workingEl = document.getElementById('prop-hero-working');
+  const computerProp = document.getElementById('prop-computer');
+  const seated = !!computerSprite[name] && !state.heroAsleep;
   if (workingEl) {
-    workingEl.src = src;
+    if (seated) workingEl.src = computerSprite[name];
     workingEl.style.display = seated ? 'block' : 'none';
   }
-  document.getElementById('prop-computer').style.display = seated ? 'none' : 'block';
-  // If hero is asleep, keep hero-living hidden regardless of seated state
-  if (state.heroAsleep) {
-    document.getElementById('hero-living').style.display = 'none';
+  if (computerProp) computerProp.style.display = seated ? 'none' : 'block';
+  // 立绘：任何姿势激活 or 男主睡着 → 隐藏对应场景的默认立绘
+  const heroLiving = document.getElementById('hero-living');
+  const heroBedroom = document.getElementById('hero-bedroom');
+  const heroBathroom = document.getElementById('hero-bathroom');
+  const livingPose  = name === 'sofa' || seated;
+  const bathPose    = name === 'toilet' || name === 'sink' || name === 'shower';
+  if (heroLiving)   heroLiving.style.display   = (state.heroAsleep || livingPose) ? 'none' : '';
+  if (heroBedroom)  heroBedroom.style.display  = state.heroAsleep ? 'none' : '';
+  if (heroBathroom) heroBathroom.style.display = (state.heroAsleep || bathPose) ? 'none' : '';
+}
+
+function clearAllPoses() {
+  clearTimeout(poseTimer);
+  poseTimer = null;
+  currentPose = null;
+  state.atComputer = false;
+  state.computerActivity = null;
+  _renderPose(null);
+}
+
+function setPose(name) {
+  // 撞车：先清上一个（视觉即时复位），再显示新的
+  clearTimeout(poseTimer);
+  currentPose = name;
+  // 同步 atComputer / computerActivity（供 saveState 存档用）
+  if (name === 'gaming' || name === 'watching' || name === 'working') {
+    state.atComputer = true;
+    state.computerActivity = name;
   } else {
-    document.getElementById('hero-living').style.display = seated ? 'none' : '';
+    state.atComputer = false;
+    state.computerActivity = null;
   }
+  _renderPose(name);
+  poseTimer = setTimeout(() => {
+    poseTimer = null;
+    currentPose = null;
+    state.atComputer = false;
+    state.computerActivity = null;
+    _renderPose(null);
+    saveState();
+  }, POSE_HOLD_MS);
+}
+
+// 兼容旧接口（applyComputerPose 从存档恢复时也走 renderPose）
+function applyComputerPose() {
+  _renderPose(currentPose);
+}
+function applySofaPose(active) {
+  if (active) setPose('sofa'); else if (currentPose === 'sofa') clearAllPoses();
+}
+function applyBathroomPose(active) {
+  if (active) setPose(active); else if (['toilet','sink','shower'].includes(currentPose)) clearAllPoses();
 }
 
 // ============ 男主体型缩放（薯片喂食）============
@@ -2227,11 +2235,8 @@ function switchScene(name) {
   if (target) {
     target.classList.add('active');
     state.scene = name;
-    // 离开客厅：电脑坐姿复位、沙发姿势复位
-    if (name !== 'living') { state.atComputer = false; applySofaPose(false); }
-    // 离开厕所：厕所姿势复位
-    if (name !== 'bathroom') { applyBathroomPose(null); }
-    applyComputerPose();
+    // 离开当前场景：所有姿势立即复位，避免下一场景闪现残留 sprite
+    clearAllPoses();
     applyDayNight();
     saveState();
   }
@@ -2271,16 +2276,6 @@ const INTERACTIONS = {
   },
   computer: (evt) => {
     const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="computer"]');
-    if (state.atComputer) {
-      // 已经在电脑前 → 起身
-      state.atComputer = false;
-      state.computerActivity = null;
-      applyComputerPose();
-      showDialog('@bf', '嗯，先歇会儿。');
-      changeStat('stress', -2);
-      saveState();
-      return;
-    }
     showMenu(anchor, [
       {
         label: '🎮 玩游戏',
@@ -2291,9 +2286,12 @@ const INTERACTIONS = {
             {
               label: '一起玩！',
               onClick: () => {
+                // 一起玩要长时间坐着 → 不走 setPose 的 2 秒自动收，直接进 2048
+                clearTimeout(poseTimer); poseTimer = null;
+                currentPose = 'gaming';
                 state.atComputer = true;
                 state.computerActivity = 'gaming';
-                applyComputerPose();
+                _renderPose('gaming');
                 showDialog('@bf', '你来啦？那你先坐！我教你。');
                 changeStat('love', +3);
                 changeStat('passion', +2);
@@ -2304,14 +2302,11 @@ const INTERACTIONS = {
             {
               label: '你自己玩吧',
               onClick: () => {
-                state.atComputer = true;
-                state.computerActivity = 'gaming';
-                applyComputerPose();
+                setPose('gaming');
                 showDialog('@bf', '好吧……那你在旁边陪我。');
                 changeStat('love', +1);
                 changeStat('stress', -3);
                 changeStat('passion', +3);
-                saveState();
                 advanceTime();
               }
             },
@@ -2321,28 +2316,22 @@ const INTERACTIONS = {
       {
         label: '🎬 看剧',
         onClick: () => {
-          state.atComputer = true;
-          state.computerActivity = 'watching';
-          applyComputerPose();
+          setPose('watching');
           showDialog('@bf', '一起窝着看部剧吧～');
           changeStat('love', +3);
           changeStat('stress', -5);
           changeStat('understanding', +2);
-          saveState();
           advanceTime();
         }
       },
       {
         label: '💼 工作',
         onClick: () => {
-          state.atComputer = true;
-          state.computerActivity = 'working';
-          applyComputerPose();
+          setPose('working');
           showDialog('@bf', '我先赶个 deadline……你陪陪我。');
           changeStat('stress', +6);
           changeStat('understanding', +1);
           changeStat('love', +1);
-          saveState();
           advanceTime();
         }
       },
@@ -2363,11 +2352,10 @@ const INTERACTIONS = {
     ]);
   },
   sofa: () => {
-    applySofaPose(true);
+    setPose('sofa');
     showDialog('@bf', '过来陪我坐一会儿嘛～');
     changeStat('love', +3);
     changeStat('stress', -3);
-    scheduleSofaClear(4000);
   },
   bed: (evt) => {
     const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="bed"]');
@@ -2461,24 +2449,21 @@ const INTERACTIONS = {
     ]);
   },
   toilet: () => {
-    applyBathroomPose('toilet');
+    setPose('toilet');
     showDialog('@bf', '……你别看啦！');
     changeStat('love', -1);
-    scheduleBathroomClear(4000);
   },
   sink: () => {
-    applyBathroomPose('sink');
+    setPose('sink');
     showDialog('@bf', '洗把脸清醒一下～');
     changeStat('stress', -3);
-    scheduleBathroomClear(4000);
   },
   shower: () => {
-    applyBathroomPose('shower');
+    setPose('shower');
     showDialog('@bf', '要一起洗吗？（脸红）');
     changeStat('love', +4);
     changeStat('passion', +5);
     changeStat('stress', -3);
-    scheduleBathroomClear(4000);
   },
   chip: () => {
     state.chipCount = (state.chipCount || 0) + 1;
@@ -3606,12 +3591,9 @@ function close2048() {
   } else {
     setTimeout(() => showDialog('@bf', '嗯……也算陪你玩了一会儿～'), 300);
   }
-  // 进入坐姿+推进时间
-  state.atComputer = true;
-  state.computerActivity = 'gaming';
-  applyComputerPose();
+  // 展示 gaming 坐姿 2 秒后自动起身 + 推进时间
+  setPose('gaming');
   advanceTime();
-  saveState();
 }
 
 // 移动逻辑：对每一行/列做 slide + merge
