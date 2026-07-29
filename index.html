@@ -2276,6 +2276,20 @@ const INTERACTIONS = {
   },
   computer: (evt) => {
     const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="computer"]');
+    // 夜晚男主睡着：只有"我自己玩 2048"一个选项，且不显示游戏机彩蛋
+    if (state.heroAsleep) {
+      showMenu(anchor, [
+        {
+          label: '🎮 我自己玩',
+          onClick: () => {
+            clearTimeout(poseTimer); poseTimer = null;
+            showDialog('系统', '你悄悄坐到电脑前，把屏幕调到最暗。');
+            open2048({ hideEgg: true });
+          }
+        },
+      ]);
+      return;
+    }
     showMenu(anchor, [
       {
         label: '🎮 玩游戏',
@@ -3518,14 +3532,19 @@ function new2048() {
   addRandomTile();
   renderG2048();
 }
-function open2048() {
+function open2048(opts = {}) {
   initG2048Board();
   g2048.best = parseInt(localStorage.getItem(G2048_KEY) || '0', 10);
   new2048();
   document.getElementById('mini-2048').classList.add('show');
   g2048.active = true;
-  // 彩蛋游戏机：只在未触发过时出现
-  setupConsoleEgg();
+  // 彩蛋游戏机：只在未触发过时出现（夜晚独自玩时隐藏）
+  if (opts.hideEgg) {
+    document.getElementById('egg-corner').style.display = 'none';
+    document.getElementById('egg-console').style.display = 'none';
+  } else {
+    setupConsoleEgg();
+  }
 }
 
 // ============ 彩蛋任天堂游戏机（卷角 → 游戏机 → 对白+CG） ============
