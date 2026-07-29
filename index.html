@@ -1733,11 +1733,6 @@ function advanceTime(hours = HOURS_PER_ACTION) {
   state.gameTime = (state.gameTime | 0) + hours * 60;
   renderClock();
   applyDayNight();
-  // 每次时间推进后,如果男主在电脑前,自动恢复站姿(玩完了/工作完了)
-  if (state.atComputer) {
-    state.atComputer = false;
-    applyComputerPose();
-  }
   saveState();
   // 4 周结算判定
   checkFinalEnding();
@@ -1815,6 +1810,15 @@ function applyDayNight() {
     state.lightsOn.bedroom = false;
     state.lightsOn.bathroom = false;
     state.autoLightsAdjusted = true;
+    // 入夜清理所有姿势 sprite（沙发/厕所），避免"他睡了但还坐在沙发上"
+    clearTimeout(sofaPoseTimer); sofaPoseTimer = null;
+    clearTimeout(bathroomPoseTimer); bathroomPoseTimer = null;
+    applySofaPose(false);
+    applyBathroomPose(null);
+    // 也把电脑坐姿收掉
+    state.atComputer = false;
+    state.computerActivity = null;
+    applyComputerPose();
     applyLights();
     saveState();
     setTimeout(() => showDialog('@bf', '好困了，去睡觉觉啦宝宝……'), 300);
@@ -1848,6 +1852,7 @@ function applyDayNight() {
   }
 }
 // 沙发姿势切换（参考 applyComputerPose 机制）
+let sofaPoseTimer = null;
 function applySofaPose(active) {
   const sofaProp  = document.getElementById('prop-hero-sofa');
   const heroLiving = document.getElementById('hero-living');
@@ -1860,7 +1865,12 @@ function applySofaPose(active) {
     if (heroLiving && !state.heroAsleep && !state.atComputer) heroLiving.style.display = '';
   }
 }
+function scheduleSofaClear(ms) {
+  clearTimeout(sofaPoseTimer);
+  sofaPoseTimer = setTimeout(() => { sofaPoseTimer = null; applySofaPose(false); }, ms);
+}
 // 厕所姿势切换：active = 'toilet'|'sink'|'shower'|null
+let bathroomPoseTimer = null;
 function applyBathroomPose(active) {
   const ids = ['toilet','sink','shower'];
   const heroB = document.getElementById('hero-bathroom');
@@ -1869,6 +1879,10 @@ function applyBathroomPose(active) {
     if (el) el.style.display = (active === id && !state.heroAsleep) ? 'block' : 'none';
   });
   if (heroB) heroB.style.display = (active || state.heroAsleep) ? 'none' : '';
+}
+function scheduleBathroomClear(ms) {
+  clearTimeout(bathroomPoseTimer);
+  bathroomPoseTimer = setTimeout(() => { bathroomPoseTimer = null; applyBathroomPose(null); }, ms);
 }
 
 function applyComputerPose() {
@@ -2353,7 +2367,7 @@ const INTERACTIONS = {
     showDialog('@bf', '过来陪我坐一会儿嘛～');
     changeStat('love', +3);
     changeStat('stress', -3);
-    setTimeout(() => applySofaPose(false), 4000);
+    scheduleSofaClear(4000);
   },
   bed: (evt) => {
     const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="bed"]');
@@ -2450,13 +2464,13 @@ const INTERACTIONS = {
     applyBathroomPose('toilet');
     showDialog('@bf', '……你别看啦！');
     changeStat('love', -1);
-    setTimeout(() => applyBathroomPose(null), 4000);
+    scheduleBathroomClear(4000);
   },
   sink: () => {
     applyBathroomPose('sink');
     showDialog('@bf', '洗把脸清醒一下～');
     changeStat('stress', -3);
-    setTimeout(() => applyBathroomPose(null), 4000);
+    scheduleBathroomClear(4000);
   },
   shower: () => {
     applyBathroomPose('shower');
@@ -2464,7 +2478,7 @@ const INTERACTIONS = {
     changeStat('love', +4);
     changeStat('passion', +5);
     changeStat('stress', -3);
-    setTimeout(() => applyBathroomPose(null), 4000);
+    scheduleBathroomClear(4000);
   },
   chip: () => {
     state.chipCount = (state.chipCount || 0) + 1;
