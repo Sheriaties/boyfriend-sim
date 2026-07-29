@@ -1863,13 +1863,16 @@ function _renderPose(name) {
   }
   if (computerProp) computerProp.style.display = seated ? 'none' : 'block';
   // 立绘：任何姿势激活 or 男主睡着 → 隐藏对应场景的默认立绘
+  // 例外：7:00 之后男主还赖床（heroAsleep=true 但已过 7 点），卧室立绘保留显示，供玩家点击叫醒
   const heroLiving = document.getElementById('hero-living');
   const heroBedroom = document.getElementById('hero-bedroom');
   const heroBathroom = document.getElementById('hero-bathroom');
   const livingPose  = name === 'sofa' || seated;
   const bathPose    = name === 'toilet' || name === 'sink' || name === 'shower';
+  const _rpMins = state.gameTime % (24*60);
+  const _lazyMorning = state.heroAsleep && _rpMins >= 7*60 && _rpMins < 22*60;
   if (heroLiving)   heroLiving.style.display   = (state.heroAsleep || livingPose) ? 'none' : '';
-  if (heroBedroom)  heroBedroom.style.display  = state.heroAsleep ? 'none' : '';
+  if (heroBedroom)  heroBedroom.style.display  = (state.heroAsleep && !_lazyMorning) ? 'none' : '';
   if (heroBathroom) heroBathroom.style.display = (state.heroAsleep || bathPose) ? 'none' : '';
 }
 
@@ -2270,7 +2273,18 @@ const HERO_LINES_IDLE = [
 function pickLine(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
 const INTERACTIONS = {
-  hero: () => {
+  hero: (evt) => {
+    // 7:00 后男主赖床（heroAsleep=true）→ 点男主 = 叫醒他
+    if (state.heroAsleep) {
+      const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="hero"]');
+      showMenu(anchor, [
+        { label: '🌞 叫醒他', onClick: () => wakeHim() },
+        { label: '……让他再睡会儿', onClick: () => {
+            showDialog('系统', '你踮着脚走出了卧室。');
+        }},
+      ]);
+      return;
+    }
     showDialog('@bf', pickLine(HERO_LINES_IDLE));
     changeStat('love', +2);
   },
@@ -2373,12 +2387,14 @@ const INTERACTIONS = {
   },
   bed: (evt) => {
     const anchor = evt && evt.currentTarget ? evt.currentTarget : document.querySelector('[data-action="bed"]');
-    if (isNightMode()) {
-      // 夜晚：只有一起睡（出去住由外出按钮触发）
+    const _bedMins = state.gameTime % (24*60);
+    const _canSleepTogether = _bedMins >= 22*60 || _bedMins < 7*60;   // 22:00–07:00 可一起睡
+    if (_canSleepTogether) {
       showMenu(anchor, [
         { label: '🌙 一起睡', onClick: () => sleepTogether() },
       ]);
     } else if (state.heroAsleep) {
+      // 07:00 之后他还赖床 → 叫醒
       showMenu(anchor, [
         { label: '🌞 叫醒他', onClick: () => wakeHim() },
         { label: '……让他再睡会儿', onClick: () => {
