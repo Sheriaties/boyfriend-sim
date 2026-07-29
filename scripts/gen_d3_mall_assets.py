@@ -159,12 +159,102 @@ def gen_bg_bedroom_empty():
         refs=[ASSETS / "bg_bedroom.png"],
     )
 
+def gen_couple_walk(frame: str):
+    """走路循环帧（侧视图，朝左走）。frame='a' 左脚在前；'b' 右脚在前。
+       'a' 是原始基准帧（用户已认可），'b' 用 'a' 作参考保持一致性。"""
+    if frame == 'a':
+        gen(
+            prompt=(
+                "Two chibi pixel-art game characters walking side by side in SIDE VIEW, "
+                "BOTH FACING LEFT (moving to the left of the frame). Full body visible. "
+                ""
+                "CHARACTER A (LEFT, in FRONT — closer to camera): "
+                "A cute young girl with a long low ponytail (dark brown hair with subtle highlights). "
+                "Wearing a CHERRY-RED tank top (vivid cherry red — not wine, not pink). "
+                "Black long pants. No glasses. Slender, chibi proportions. "
+                "Pretty face with big anime eyes, soft pink blushing cheeks, tiny cute smile. "
+                ""
+                "CHARACTER B (RIGHT, one step BEHIND): "
+                "A cute young man in a BLUE HOODIE (hood down, unzipped a bit), BLACK pants, "
+                "BLACK-FRAMED GLASSES, short dark hair with slight fluff. "
+                "Slightly taller than the girl. Warm friendly smile. "
+                ""
+                "They are walking together, arms swinging naturally, holding hands lightly if possible. "
+                "The girl's LEFT foot is forward and her right foot is back (mid-stride). "
+                "The boy's LEFT foot is forward and his right foot is back (mid-stride). "
+                ""
+                "Style: HIGH-DETAIL PIXEL ART, refined and delicate (NOT low-res chunky pixels), "
+                "chibi proportions (~4.5 heads tall), soft rounded outlines, warm saturated palette, "
+                "cute anime-style faces. FULLY TRANSPARENT BACKGROUND (alpha channel). "
+                "No shadow on ground. No text. Just the two-character pair as a game sprite. "
+                "Similar polish and cuteness to modern Stardew Valley portrait mods."
+            ),
+            out_path=ASSETS / "couple_walk_a.png",
+            refs=[CHARS / "heroine_idle.png", CHARS / "hero_idle.png"],
+        )
+    else:
+        gen(
+            prompt=(
+                "Reproduce the same two chibi pixel-art characters EXACTLY as in the reference image "
+                "(same girl in cherry-red tank top with low ponytail, same boy in blue hoodie with glasses). "
+                "Same art style, same proportions, same colors, same faces, same outfits. "
+                ""
+                "The ONLY differences from the reference: "
+                "(1) Both characters' LEG POSITIONS are SWAPPED — this is the NEXT frame of a walk cycle. "
+                "The girl's RIGHT foot is now forward and her left foot is back (mid-stride). "
+                "The boy's RIGHT foot is now forward and his left foot is back (mid-stride). "
+                "(2) Their arms swing slightly in the opposite direction accordingly. "
+                ""
+                "Everything else (facing direction — still facing LEFT, camera angle, character designs, "
+                "hair, outfits, faces, expressions, art style, resolution) MUST match the reference image. "
+                ""
+                "HIGH-DETAIL PIXEL ART, refined and delicate, cute anime-style faces. "
+                "FULLY TRANSPARENT BACKGROUND. No shadow. No text."
+            ),
+            out_path=ASSETS / "couple_walk_b.png",
+            refs=[ASSETS / "couple_walk_a.png"],
+        )
+
+
+def gen_couple_back():
+    """两人站着的背影（背对镜头看店铺）。"""
+    gen(
+        prompt=(
+            "Reproduce the same two chibi pixel-art characters as in the reference image "
+            "(the same girl and boy with the same outfits, hair, proportions, and art style), "
+            "but from a BACK VIEW — both characters are seen from BEHIND, facing away from the camera. "
+            "Full body visible from head to feet. They are standing still (not walking), "
+            "looking curiously at something in front of them (off-frame). "
+            ""
+            "CHARACTER A (LEFT): "
+            "The girl — long low ponytail hanging down her back (dark brown hair), "
+            "CHERRY-RED tank top (back view — shoulders and back of the tank visible), "
+            "black long pants. Her back is toward the camera. "
+            ""
+            "CHARACTER B (RIGHT): "
+            "The boy — short dark hair, BLUE HOODIE (hood down, back of the hoodie visible), "
+            "BLACK pants. His back is toward the camera. Slightly taller than the girl. "
+            ""
+            "They stand close together. Relaxed pose. Maybe one of them tilting their head slightly. "
+            ""
+            "SAME art style as the reference: HIGH-DETAIL PIXEL ART, refined and delicate, "
+            "chibi proportions (~4.5 heads tall), soft rounded outlines, warm saturated palette. "
+            "FULLY TRANSPARENT BACKGROUND (alpha channel). No shadow on ground. No text."
+        ),
+        out_path=ASSETS / "couple_back.png",
+        refs=[ASSETS / "couple_walk_a.png"],
+    )
+
+
 TARGETS = {
     "bg_mall":              gen_bg_mall,
     "sprite_plushie_stand": gen_sprite_plushie_stand,
     "sprite_katsu_shop":    gen_sprite_katsu_shop,
     "cg_mall_pv":           gen_cg_mall_pv,
     "bg_bedroom_empty":     gen_bg_bedroom_empty,
+    "couple_walk_a":        lambda: gen_couple_walk('a'),
+    "couple_walk_b":        lambda: gen_couple_walk('b'),
+    "couple_back":          gen_couple_back,
 }
 
 def main():
