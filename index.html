@@ -401,6 +401,7 @@
   body.debug .hotspot-label { opacity: 1; transform: none; }
   /* 夜晚（男主睡着）隐藏卧室玩偶热区 */
   body.hero-asleep .plushie-hotspot { display: none; }
+  body.no-plushies .plushie-hotspot { display: none; }
 
   /* BAD END 覆盖屏 —— 用 PV 图作背景 + 半透明面板 */
   .bad-end {
@@ -1195,6 +1196,123 @@
     animation: blink 1.4s infinite;
   }
 
+  /* ============ D3 商场事件小游戏 ============ */
+  .mall-overlay {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    z-index: 260;
+    display: none;
+    overflow: hidden;
+    cursor: none;
+  }
+  .mall-overlay.show { display: block; }
+  .mall-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #e6c8a0 0%, #d4a678 40%, #b8895b 100%);
+    /* 用 img 替换后，这里放 background-image: url('assets/bg_mall.png') */
+  }
+  /* 商店 sprite（容器） */
+  .mall-shop {
+    position: absolute;
+    bottom: 22%;
+    height: 46%;
+    width: 16%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+  }
+  .mall-shop img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  .mall-shop-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%; height: 100%;
+    border-radius: 10px;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  }
+  .mall-shop-icon  { font-size: 2.8vw; line-height: 1.2; }
+  .mall-shop-label { font-size: 1vw; margin-top: 0.4vw; letter-spacing: 0.1em; }
+  /* 玩偶摊：在场景 x=42% 位置（先出现） */
+  .mall-shop-plushie {
+    left: 38%;
+  }
+  .mall-shop-plushie .mall-shop-placeholder {
+    background: linear-gradient(135deg, #ff9ec2 0%, #ffbcd4 100%);
+  }
+  /* 猪排店：在场景 x=6% 位置（后出现，在左边） */
+  .mall-shop-katsu {
+    left: 4%;
+  }
+  .mall-shop-katsu .mall-shop-placeholder {
+    background: linear-gradient(135deg, #c88a4c 0%, #d4a276 100%);
+  }
+  /* 两人小模型 */
+  .mall-couple {
+    position: absolute;
+    bottom: 20%;
+    height: 32%;
+    display: flex;
+    gap: 0.4vw;
+    transform: translateX(0);
+    transition: transform 0.05s linear;
+    pointer-events: none;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+  }
+  .mall-couple img {
+    height: 100%;
+    width: auto;
+    image-rendering: auto;
+  }
+  /* 玩家的判定圈（跟随鼠标 + 被强制左飘） */
+  .mall-cursor {
+    position: absolute;
+    top: 50%;
+    left: 90%;
+    width: 5vw; height: 5vw;
+    margin: -2.5vw 0 0 -2.5vw;
+    border: 3px solid rgba(255,255,255,0.85);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,220,140,0.35) 0%, rgba(255,220,140,0) 70%);
+    box-shadow: 0 0 20px rgba(255,220,140,0.6), inset 0 0 12px rgba(255,220,140,0.4);
+    pointer-events: none;
+    z-index: 5;
+    transition: none;
+  }
+  .mall-cursor.on-target {
+    border-color: rgba(255,120,180,0.95);
+    background: radial-gradient(circle, rgba(255,120,180,0.45) 0%, rgba(255,120,180,0) 70%);
+    box-shadow: 0 0 32px rgba(255,120,180,0.85), inset 0 0 16px rgba(255,120,180,0.6);
+    animation: mallCursorPulse 0.6s infinite alternate;
+  }
+  @keyframes mallCursorPulse {
+    from { transform: scale(1); }
+    to   { transform: scale(1.12); }
+  }
+  .mall-hint {
+    position: absolute;
+    top: 4%; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: #ffe6b0;
+    padding: 0.8vw 1.4vw;
+    border-radius: 999px;
+    font-size: 1vw;
+    letter-spacing: 0.05em;
+    z-index: 6;
+    max-width: 80%;
+    text-align: center;
+  }
+
   /* ============ 开发者模式面板 ============ */
   #dev-toggle {
     position: absolute;
@@ -1329,7 +1447,7 @@
       <img class="prop" id="prop-window" src="assets/window_day.png" alt="" data-state="day" />
       <!-- 窗户热区（对齐 prop-window[data-state="day"]: right:20% width:32%） -->
       <div class="hotspot" id="window-hotspot" data-action="winview"
-           style="right:20%; top:30%; width:20%; height:42%;">
+           style="right:30%; top:30%; width:12%; height:42%;">
         <span class="hotspot-label">🪟 看风景</span>
       </div>
       <!-- 吊灯 sprite -->
@@ -1354,7 +1472,7 @@
            style="right:6%; top:28%; width:26%;" />
       <!-- 薯片热区（柜子里的薯片袋） -->
       <div class="hotspot" data-action="chip"
-           style="right:15%; top:33%; width:6%; height:9%;">
+           style="right:18%; top:33%; width:4%; height:9%;">
         <span class="hotspot-label">🍟 薯片</span>
       </div>
       <!-- 电脑桌 热区 -->
@@ -1431,13 +1549,13 @@
       </div>
       <!-- 兔子玩偶热区 -->
       <div class="hotspot plushie-hotspot" data-action="bunny"
-           style="left:41%; top:52%; width:6%; height:12%;">
-        <span class="hotspot-label">🐰 兔兔</span>
+           style="left:42%; top:52%; width:8%; height:12%;">
+        <span class="hotspot-label">🐰 卢米·紫水晶</span>
       </div>
       <!-- 企鹅玩偶热区 -->
       <div class="hotspot plushie-hotspot" data-action="penguin"
-           style="left:48%; top:52%; width:6%; height:12%;">
-        <span class="hotspot-label">🐧 企鹅</span>
+           style="left:51%; top:52%; width:8%; height:12%;">
+        <span class="hotspot-label">🐧 大奥利</span>
       </div>
       <img class="character" id="hero-bedroom"
            src="assets/characters/hero_idle.png" data-action="hero" alt="男友"
@@ -1491,6 +1609,43 @@
     <div class="cg-options" id="cg-options" style="display:none;"></div>
     <div class="cg-continue-hint" id="cg-continue-hint" style="display:none;">▶ 点击继续</div>
   </div>
+
+  <!-- ============ D3 商场事件小游戏 ============ -->
+  <div id="mall-overlay" class="mall-overlay">
+    <!-- 商场横向长条背景 -->
+    <div class="mall-bg" id="mall-bg">
+      <!-- 玩偶摊 sprite（沿路第一个） -->
+      <div class="mall-shop mall-shop-plushie" id="mall-shop-plushie">
+        <div class="mall-shop-placeholder">
+          <div class="mall-shop-icon">🐰 🐧</div>
+          <div class="mall-shop-label">玩偶摊</div>
+        </div>
+        <img src="assets/sprite_plushie_stand.png" alt=""
+             onload="this.previousElementSibling.style.display='none'"
+             onerror="this.style.display='none'" />
+      </div>
+      <!-- 猪排店 sprite（沿路第二个） -->
+      <div class="mall-shop mall-shop-katsu" id="mall-shop-katsu">
+        <div class="mall-shop-placeholder">
+          <div class="mall-shop-icon">🍱</div>
+          <div class="mall-shop-label">炸猪排</div>
+        </div>
+        <img src="assets/sprite_katsu_shop.png" alt=""
+             onload="this.previousElementSibling.style.display='none'"
+             onerror="this.style.display='none'" />
+      </div>
+      <!-- 两人小模型（跟着走） -->
+      <div class="mall-couple" id="mall-couple">
+        <img class="mall-heroine" src="assets/characters/heroine_idle.png" alt="女主" />
+        <img class="mall-hero"    src="assets/characters/hero_idle.png"    alt="男主" />
+      </div>
+    </div>
+    <!-- 玩家用鼠标控制的判定圈：会被强制左飘 -->
+    <div class="mall-cursor" id="mall-cursor"></div>
+    <!-- 顶部提示条 -->
+    <div class="mall-hint" id="mall-hint">🖱 拖动鼠标向右，抵抗惯性去看看那个摊子</div>
+  </div>
+  <!-- ============ D3 商场事件结束覆盖屏（失败对白） ============ -->
 
   <!-- 开发者模式按钮 -->
   <button id="dev-toggle" title="开发者模式 (~)" onclick="toggleDevPanel()">⚙</button>
@@ -1579,10 +1734,12 @@
     <h3>⚙️ DEV MODE</h3>
 
     <h4>剧情触发</h4>
+    <button onclick="dev_triggerD3Mall()">🛍 D3 商场事件（玩偶 vs 猪排）</button>
     <button onclick="dev_triggerWalk()">▶ 散步剧情（含牵手）</button>
     <button onclick="dev_triggerArgue()">▶ 争吵剧情</button>
     <button onclick="dev_triggerKiss()">▶ 和好接吻</button>
     <button onclick="dev_triggerBadEnd()">💀 薯片 Bad End</button>
+    <button onclick="state.plushiesOwned=!state.plushiesOwned; applyDayNight(); saveState(); alert('plushiesOwned = '+state.plushiesOwned);">🐰 切换 plushiesOwned</button>
 
     <h4>结局测试</h4>
     <select id="dev-ending-select" style="width:100%;padding:0.35vw;background:#333;color:#fff;border:1px solid #555;font-family:inherit;font-size:0.8vw;margin-bottom:0.4vw;">
@@ -1655,6 +1812,11 @@ const DEFAULT_STATE = {
   kissDone: false,
   switchEggShown: false,
   coopGameDone: false,
+  // ---- 大事件推进（Layer 3）----
+  plushiesOwned: false,   // D3 商场事件成功后 = true，卧室出现两只玩偶+热区
+  d3Done: false,          // D3 商场事件是否已完结（无论成功失败）
+  d3PermanentFail: false, // D3 玩家选"回家" → 永久失败，永远没玩偶
+  clues: {},              // 已察觉的线索：{ clueId: {discovered:true, unlockedAt:gameTime} }
   badEnd: false,
   ended: false,
   endingId: null,
@@ -1677,10 +1839,23 @@ function loadState() {
     if (typeof parsed.lightsOn === 'boolean') {
       parsed.lightsOn = { living: parsed.lightsOn, bedroom: true, bathroom: true };
     }
+    // 老存档兼容：没有 plushiesOwned 字段 → 视为老玩家（卧室本来就有玩偶）
+    if (parsed.plushiesOwned === undefined) {
+      parsed.plushiesOwned = true;
+      parsed.d3Done = true;
+    }
     return { ...structuredClone(DEFAULT_STATE), ...parsed,
              lightsOn: {...DEFAULT_STATE.lightsOn, ...(parsed.lightsOn || {})} };
   } catch { return structuredClone(DEFAULT_STATE); }
 }
+// 存档兼容层：老存档没有 plushiesOwned 字段 → 默认给 true（老玩家卧室本来就有玩偶）
+(function migrateLegacy() {
+  if (state.plushiesOwned === undefined) {
+    state.plushiesOwned = true;
+    state.d3Done = true;
+    saveState();
+  }
+})();
 function saveState() {
   localStorage.setItem(SAVE_KEY, JSON.stringify(state));
 }
@@ -1736,6 +1911,8 @@ function advanceTime(hours = HOURS_PER_ACTION) {
   saveState();
   // 4 周结算判定
   checkFinalEnding();
+  // 主线大事件钩子（Layer 3）
+  checkStoryBeats();
 }
 // 兼容旧调用（如果还有地方引用），已不再自动催睡觉
 function triggerBedtime() { /* deprecated: 22:00 由 applyDayNight 一次性提示 */ }
@@ -1796,13 +1973,20 @@ function applyDayNight() {
     win.src = useNightVisual ? 'assets/window_night.png' : 'assets/window_day.png';
     win.dataset.state = useNightVisual ? 'night' : 'day';
   }
-  // 卧室背景切换：只要男主睡着就用夜景版(男主躺床)
+  // 卧室背景切换：只要男主睡着就用夜景版(男主躺床)；白天根据 plushiesOwned 选空床/有玩偶
   const bedScene = document.getElementById('scene-bedroom');
   if (bedScene) {
-    bedScene.style.backgroundImage = state.heroAsleep
-      ? "url('assets/bg_bedroom_night.png')"
-      : "url('assets/bg_bedroom.png')";
+    if (state.heroAsleep) {
+      bedScene.style.backgroundImage = "url('assets/bg_bedroom_night.png')";
+    } else {
+      // 空床版素材可能还没生成 → 用 fallback（当前存档若素材缺失至少画面能看）
+      bedScene.style.backgroundImage = state.plushiesOwned
+        ? "url('assets/bg_bedroom.png')"
+        : "url('assets/bg_bedroom_empty.png'), url('assets/bg_bedroom.png')";
+    }
   }
+  // 玩偶热区显隐（未拥有=隐藏）
+  document.body.classList.toggle('no-plushies', !state.plushiesOwned);
   // 22:00 首次进夜 → 男主入睡 + 关全屋灯 + 一次性对白
   if (isNight && !state.autoLightsAdjusted) {
     state.heroAsleep = true;
@@ -2760,7 +2944,251 @@ async function triggerKissStory(opts = {}) {
   }
 }
 
-// ============ 开发者模式 ============
+// ============ 主线大事件推进（storyBeats）============
+// 每次 advanceTime 后调用，检查是否达到某个大事件的触发日期
+function checkStoryBeats() {
+  if (state.ended) return;
+  const day = Math.floor(state.gameTime / (24*60)) + 1;
+  const hourNow = Math.floor((state.gameTime % (24*60)) / 60);
+
+  // D3 · 商场事件（白天触发，只触发一次）
+  if (day >= 3 && !state.d3Done && hourNow >= 9 && hourNow < 20) {
+    // 不在夜晚场景，且未处于其他 CG 中
+    if (!state.heroAsleep && !isInCG()) {
+      setTimeout(() => triggerD3MallEvent(), 500);
+      return;
+    }
+  }
+
+  // 未来大事件钩子占位（D7 散步 / D11 争吵 / D14 接吻 / D18 危机 / D22 后果 / D28 摊牌）
+  // 参考 HANDOFF.md · Layer 3 大事件时间轴
+}
+
+// 是否正处于 CG 播放中（避免大事件叠加触发）
+function isInCG() {
+  const cg  = document.getElementById('cg-overlay');
+  const mall = document.getElementById('mall-overlay');
+  return (cg && cg.classList.contains('show')) || (mall && mall.classList.contains('show'));
+}
+
+// ============ D3 大事件：商场逛街 · 玩偶店 vs 猪排店 ============
+// 机制：两人从右向左自动平移穿过商场；玩家的判定圈被强制左飘；
+// 玩家要拖动鼠标（抗力）让判定圈盖住玩偶摊，且两人模型走到玩偶摊时判定圈仍在 → 成功。
+// 成功：黑屏对白 + PV + 女主心声 + +10 love/understanding + plushiesOwned=true
+// 失败：走到猪排店 → 男主问回家/继续 → 回家=永久失败 / 继续=完全重来
+async function triggerD3MallEvent() {
+  // 引入：黑屏 + 男主邀请 + 逛得开心
+  cgShow('');                                   // 空 src = 纯黑屏，只放对白
+  document.getElementById('cg-image').style.opacity = '0';
+  await cgSay('@bf', '亲爱的，要不要出去逛逛？');
+  await cgSay('旁白', '你换好衣服，牵着他的手一起出了门。');
+  await cgSay('旁白', '两个人在商场里逛得很开心。累了想找个地方歇一歇。');
+  cgHide();
+  document.getElementById('cg-image').style.opacity = '1';
+
+  // 小游戏循环（无限重玩直到成功或玩家选"回家"）
+  while (true) {
+    const success = await playMallMinigame();
+    if (success) {
+      await d3MallSuccessOutcome();
+      state.d3Done = true;
+      saveState();
+      return;
+    }
+    // 失败：走到猪排店 → 男主问回家/继续
+    const choice = await d3MallFailPrompt();
+    if (choice === 'home') {
+      // 永久失败：卧室永远空床
+      state.d3Done = true;
+      state.d3PermanentFail = true;
+      state.plushiesOwned = false;
+      saveState();
+      cgShow('');
+      document.getElementById('cg-image').style.opacity = '0';
+      await cgSay('旁白', '你们吃完猪排，慢慢走回了家。');
+      await cgSay('旁白', '路上他一直很温柔，只是那两只玩偶……你没再提起。');
+      document.getElementById('cg-image').style.opacity = '1';
+      cgHide();
+      return;
+    }
+    // continue: 完全重播（循环继续）
+  }
+}
+
+// 商场小游戏主循环
+// 成功条件：两人模型走到玩偶摊 x 位置时，判定圈仍在玩偶摊热区内
+// 返回 Promise<boolean>
+function playMallMinigame() {
+  return new Promise(resolve => {
+    const overlay  = document.getElementById('mall-overlay');
+    const cursorEl = document.getElementById('mall-cursor');
+    const coupleEl = document.getElementById('mall-couple');
+    const plushieEl = document.getElementById('mall-shop-plushie');
+    overlay.classList.add('show');
+
+    // 参数
+    const overlayRect = () => overlay.getBoundingClientRect();
+    const DURATION_MS = 7000;                    // 两人走完全程时长
+    const START_X_PCT = 92;                      // 两人起点（右侧）
+    const END_X_PCT   = 6;                       // 两人终点（左侧）—— 猪排店位置
+    const PLUSHIE_X_PCT = 45;                    // 玩偶摊 x 中心
+    const CURSOR_DRIFT_PX_PER_FRAME = 1.8;       // 判定圈每帧被推向左的像素数（约 30fps => 60px/s）
+    const CURSOR_SIZE_PCT = 5;                   // 判定圈半径（vw ≈ %）
+    const PLUSHIE_HITBOX_PCT = 12;               // 玩偶摊命中框半宽（%）
+
+    // 判定圈位置（相对 overlay，用 %）
+    let cursorX = START_X_PCT;
+    let cursorY = 55;                            // 固定在下方偏中，跟人物一致
+    let mouseControlled = false;                 // 玩家是否有鼠标输入
+    let lastMouseMoveAt = 0;
+
+    // 鼠标输入：把鼠标位置转 %，作为"玩家想去的位置"
+    let targetX = cursorX, targetY = cursorY;
+    const onMouseMove = (e) => {
+      const r = overlayRect();
+      targetX = (e.clientX - r.left) / r.width  * 100;
+      targetY = (e.clientY - r.top)  / r.height * 100;
+      mouseControlled = true;
+      lastMouseMoveAt = performance.now();
+    };
+    overlay.addEventListener('mousemove', onMouseMove);
+    // 触屏支持
+    const onTouchMove = (e) => {
+      if (!e.touches || !e.touches[0]) return;
+      const r = overlayRect();
+      targetX = (e.touches[0].clientX - r.left) / r.width  * 100;
+      targetY = (e.touches[0].clientY - r.top)  / r.height * 100;
+      mouseControlled = true;
+      lastMouseMoveAt = performance.now();
+      e.preventDefault();
+    };
+    overlay.addEventListener('touchmove', onTouchMove, {passive:false});
+
+    // 两人平移动画（用 transform）
+    // 通过 requestAnimationFrame 手动推进，不用 CSS transition
+    const startAt = performance.now();
+    let done = false;
+
+    // 判定用状态
+    let coupleXPct = START_X_PCT;
+    let successFlag = null;   // 到达玩偶摊时锁定，null = 未到
+
+    function frame(now) {
+      if (done) return;
+      const t = Math.min(1, (now - startAt) / DURATION_MS);
+      // 两人位置：线性从 START → END
+      coupleXPct = START_X_PCT + (END_X_PCT - START_X_PCT) * t;
+      coupleEl.style.left = coupleXPct + '%';
+
+      // 判定圈：先被"惯性"推向左（模拟顺着走的方向），若玩家有鼠标输入，向鼠标目标靠拢
+      // 惯性效果 = 每帧减少 X（往左）
+      const overlayW = overlayRect().width;
+      const driftPct = (CURSOR_DRIFT_PX_PER_FRAME / overlayW) * 100;
+      cursorX -= driftPct;
+      if (mouseControlled && (now - lastMouseMoveAt) < 400) {
+        // 玩家最近有输入 → 向鼠标目标以 0.35 的插值靠拢（这样有拖动感、但要持续用力）
+        cursorX += (targetX - cursorX) * 0.35;
+        cursorY += (targetY - cursorY) * 0.35;
+      }
+      // 限制范围
+      cursorX = Math.max(0, Math.min(100, cursorX));
+      cursorY = Math.max(5, Math.min(95, cursorY));
+      cursorEl.style.left = cursorX + '%';
+      cursorEl.style.top  = cursorY + '%';
+
+      // 判定圈是否在玩偶摊热区内
+      const onPlushie = Math.abs(cursorX - PLUSHIE_X_PCT) < PLUSHIE_HITBOX_PCT
+                    && cursorY > 30 && cursorY < 85;
+      cursorEl.classList.toggle('on-target', onPlushie);
+
+      // 关键判定时刻：两人模型走到玩偶摊 x 位置时，锁定成功/失败
+      if (successFlag === null && coupleXPct <= PLUSHIE_X_PCT) {
+        successFlag = onPlushie;
+      }
+
+      if (t >= 1) {
+        done = true;
+        cleanup();
+        resolve(successFlag === true);
+      } else {
+        requestAnimationFrame(frame);
+      }
+    }
+
+    function cleanup() {
+      overlay.removeEventListener('mousemove', onMouseMove);
+      overlay.removeEventListener('touchmove', onTouchMove);
+      overlay.classList.remove('show');
+      cursorEl.classList.remove('on-target');
+    }
+
+    // 重置视觉起点
+    coupleEl.style.left = START_X_PCT + '%';
+    cursorEl.style.left = START_X_PCT + '%';
+    cursorEl.style.top  = '55%';
+    requestAnimationFrame(frame);
+  });
+}
+
+// 成功分支演出
+async function d3MallSuccessOutcome() {
+  cgShow('');
+  document.getElementById('cg-image').style.opacity = '0';
+  await cgSay('旁白', '在一个小摊前，你停下了脚步。');
+  await cgSay('旁白', '摊子上摆着两只可爱的玩偶。');
+  await cgSay('旁白', '一只兔子，一只企鹅。');
+  await cgSay('旁白', '……咦，它们的名字牌上写着——「卢米·紫水晶」「大奥利」。');
+  await cgSay('@bf', '这……也算是我们共同抚养的两个孩子了吧。');
+  await cgSay('@bf', '请多关照，孩子他妈。');
+  document.getElementById('cg-image').style.opacity = '1';
+
+  // 播 PV（如果有 cg_mall_pv.png 就用，没有先用 cg_walk_hold 顶一下）
+  cgShow('assets/cg_mall_pv.png');
+  // 兜底：如果图 404，用现有 CG 占位
+  const cgImg = document.getElementById('cg-image');
+  await new Promise(res => {
+    let done = false;
+    cgImg.onload = () => { if (!done) { done = true; res(); } };
+    cgImg.onerror = () => { if (!done) { done = true; cgImg.src = 'assets/cg_walk_hold.png'; res(); } };
+    setTimeout(() => { if (!done) { done = true; res(); } }, 800);
+  });
+  await cgSay('旁白', '（我们家里……又多出两个新成员了。）');
+
+  // 数值 + 世界状态永久改变
+  state.plushiesOwned = true;
+  state.d3PermanentFail = false;
+  state.clues = state.clues || {};
+  state.clues.mall_plushie = { discovered: true, unlockedAt: state.gameTime };
+  saveState();
+  changeStat('love', +10);
+  changeStat('understanding', +10);
+
+  cgHide();
+  applyDayNight();  // 刷新卧室背景 → 有玩偶版
+}
+
+// 失败提示：男主问回家/继续
+function d3MallFailPrompt() {
+  return new Promise(async resolve => {
+    cgShow('');
+    document.getElementById('cg-image').style.opacity = '0';
+    await cgSay('旁白', '你们走到了炸猪排店门口。');
+    await cgSay('@bf', '闻起来好香啊……先吃这个吧？');
+    await cgSay('旁白', '你们点了两份猪排。他吃得很开心。');
+    await cgSay('@bf', '还要不要再逛逛？');
+    const pick = await cgChoose(['再逛一会儿', '回家吧'], 0);
+    document.getElementById('cg-image').style.opacity = '1';
+    cgHide();
+    resolve(pick === 0 ? 'continue' : 'home');
+  });
+}
+
+function dev_triggerD3Mall() {
+  document.getElementById('dev-panel').classList.remove('show');
+  triggerD3MallEvent();
+}
+
+
 function toggleDevPanel() {
   const p = document.getElementById('dev-panel');
   p.classList.toggle('show');
