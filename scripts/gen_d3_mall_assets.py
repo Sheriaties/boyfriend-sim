@@ -86,8 +86,11 @@ def gen_sprite_plushie_stand():
             "The stall: a small wooden counter with a soft pastel pink-and-white striped canopy above, "
             "supported by two thin wooden posts. "
             ""
-            "On top of the counter, TWO plushies sit side by side (use the reference image ONLY for the plushie "
-            "designs — the purple lop-eared rabbit on the LEFT, the chubby penguin with grey scarf on the RIGHT). "
+            "On top of the counter, TWO plushies sit side by side: "
+            "LEFT — a plush lop-eared rabbit with a PURE WHITE BODY, long floppy ears whose INSIDES are SOFT PINK "
+            "(only the ear-linings are pink, the rest of the rabbit is entirely white with subtle cream shading). "
+            "Small blushing cheeks, big shiny eyes, sitting cutely. "
+            "RIGHT — a chubby penguin plush, dark blue-grey back, white belly, small yellow beak, tiny grey scarf. "
             ""
             "In FRONT of the counter, two small wooden hand-written name tags: "
             "LEFT tag reads '卢米·紫水晶' (Chinese Simplified). "
@@ -99,7 +102,7 @@ def gen_sprite_plushie_stand():
             "Compact composition, aspect ratio around 4:3 or square."
         ),
         out_path=ASSETS / "sprite_plushie_stand.png",
-        refs=[ASSETS / "cg_mall_pv.png"],
+        refs=[],
     )
 
 def gen_sprite_katsu_shop():
@@ -118,21 +121,27 @@ def gen_sprite_katsu_shop():
 def gen_cg_mall_pv():
     gen(
         prompt=(
-            "STRICTLY follow the art style of the second reference image (soft cel-shaded modern anime, "
+            "STRICTLY follow the art style of the FIRST reference image (soft cel-shaded modern anime, "
             "clean detailed line art, gentle rim lighting, warm blush tones, dreamy shallow depth of field). "
             "Do NOT use pixel art. Do NOT use flat kawaii illustration. Use detailed anime rendering. "
             ""
             "Scene: golden late afternoon light streaming diagonally through a bedroom window (off-frame). "
             "Composition: medium close-up focused on the head of a made-up bed with soft cream pillows and warm beige sheets. "
             "On the pillows, side by side and leaning gently against each other in a warm intimate pose: "
-            "(A) a PURPLE / LAVENDER plush rabbit with long floppy ears and big shiny eyes on the LEFT, "
-            "(B) a chubby PENGUIN plush with dark blue-grey back, white belly and a tiny grey scarf on the RIGHT. "
+            ""
+            "(A) LEFT plushie — a lop-eared rabbit. Its BODY IS PURE WHITE (creamy, snowy fluff). "
+            "ONLY the INSIDES of its long floppy ears are SOFT PINK. "
+            "The rest of the rabbit (head, body, arms, legs) is entirely WHITE. "
+            "Big shiny eyes, small pink blushing cheeks. NOT a purple rabbit — WHITE with pink ear-linings. "
+            ""
+            "(B) RIGHT plushie — a chubby penguin, dark blue-grey back, white belly, small yellow beak, tiny grey scarf. "
+            ""
             "Their heads slightly touching. Soft golden hour rim light on both plushies. "
             "Soft focus background, no humans in the frame at all, no text, no name tags. "
             "Aspect ratio 16:9. Anime PV cover-quality illustration."
         ),
         out_path=ASSETS / "cg_mall_pv.png",
-        refs=[ASSETS / "cg_fireworks_pov_turn.png", ASSETS / "bg_bedroom.png"],
+        refs=[ASSETS / "cg_fireworks_pov_turn.png"],
     )
 
 def gen_bg_bedroom_empty():
