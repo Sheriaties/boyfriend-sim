@@ -79,17 +79,27 @@ def gen_bg_mall():
 def gen_sprite_plushie_stand():
     gen(
         prompt=(
-            "A small kawaii Japanese-style plushie market stall, "
-            "wooden counter with a striped pink-and-white canopy, "
-            "featuring TWO specific plushies clearly visible on the counter: "
-            "(1) a purple crystal-themed rabbit plushie with long floppy ears, and "
-            "(2) a chubby penguin plushie with a small yellow beak. "
-            "Small hand-drawn name tags in front of each plushie. "
-            "Pixel-art style with transparent background, flat front view, "
-            "no ground shadow, no people, cute and warm."
+            "A standalone kawaii plushie market stall SPRITE with FULLY TRANSPARENT BACKGROUND (alpha channel). "
+            "IMPORTANT: NO bedroom, NO wall, NO floor, NO pillows behind the stall. "
+            "Only draw the stall itself floating on transparency. "
+            ""
+            "The stall: a small wooden counter with a soft pastel pink-and-white striped canopy above, "
+            "supported by two thin wooden posts. "
+            ""
+            "On top of the counter, TWO plushies sit side by side (use the reference image ONLY for the plushie "
+            "designs — the purple lop-eared rabbit on the LEFT, the chubby penguin with grey scarf on the RIGHT). "
+            ""
+            "In FRONT of the counter, two small wooden hand-written name tags: "
+            "LEFT tag reads '卢米·紫水晶' (Chinese Simplified). "
+            "RIGHT tag reads '大奥利' (Chinese Simplified). "
+            "No English text anywhere. "
+            ""
+            "Pixel-art style, flat front view, drop shadow only under the stall itself, "
+            "no environment, no scenery, just the stall as a game sprite with transparent background. "
+            "Compact composition, aspect ratio around 4:3 or square."
         ),
         out_path=ASSETS / "sprite_plushie_stand.png",
-        refs=[ASSETS / "bg_bedroom.png"],  # 用来参考兔+企鹅长相
+        refs=[ASSETS / "cg_mall_pv.png"],
     )
 
 def gen_sprite_katsu_shop():
@@ -108,34 +118,36 @@ def gen_sprite_katsu_shop():
 def gen_cg_mall_pv():
     gen(
         prompt=(
-            "Anime-style illustration, warm romantic mood, in the style of soft cel-shaded modern anime "
-            "similar to Makoto Shinkai lighting but softer, close-up composition. "
-            "A rabbit plushie (long floppy ears, soft purple color, cute face) and a chubby penguin plushie "
-            "with a small yellow beak are sitting side by side on a neatly-made bed, "
-            "leaning gently against each other in an intimate, warm pose. "
-            "The bed has soft white sheets and a pastel pillow. "
-            "Golden afternoon light filters in from a window off-frame, "
-            "creating soft rim light on both plushies. "
-            "Detailed line art, soft blush tones, dreamy shallow depth of field, "
-            "aspect ratio 16:9, no humans in the frame, no text."
+            "STRICTLY follow the art style of the second reference image (soft cel-shaded modern anime, "
+            "clean detailed line art, gentle rim lighting, warm blush tones, dreamy shallow depth of field). "
+            "Do NOT use pixel art. Do NOT use flat kawaii illustration. Use detailed anime rendering. "
+            ""
+            "Scene: golden late afternoon light streaming diagonally through a bedroom window (off-frame). "
+            "Composition: medium close-up focused on the head of a made-up bed with soft cream pillows and warm beige sheets. "
+            "On the pillows, side by side and leaning gently against each other in a warm intimate pose: "
+            "(A) a PURPLE / LAVENDER plush rabbit with long floppy ears and big shiny eyes on the LEFT, "
+            "(B) a chubby PENGUIN plush with dark blue-grey back, white belly and a tiny grey scarf on the RIGHT. "
+            "Their heads slightly touching. Soft golden hour rim light on both plushies. "
+            "Soft focus background, no humans in the frame at all, no text, no name tags. "
+            "Aspect ratio 16:9. Anime PV cover-quality illustration."
         ),
         out_path=ASSETS / "cg_mall_pv.png",
-        refs=[ASSETS / "bg_bedroom.png", ASSETS / "cg_fireworks_pov_turn.png"],  # 卧室玩偶+画风参考
+        refs=[ASSETS / "cg_fireworks_pov_turn.png", ASSETS / "bg_bedroom.png"],
     )
 
 def gen_bg_bedroom_empty():
     gen(
         prompt=(
-            "A cozy pixel-art bedroom interior scene, front flat view, loft-style room, "
-            "detailed pixel art similar to Stardew Valley precision. "
-            "A neatly made bed in the center with soft white sheets and two small pastel pillows — "
-            "but NO plushies on the bed, the pillows should be BARE. "
-            "Beside the bed: a small nightstand with a warm bedside lamp (off during day). "
-            "Warm morning sunlight from an off-screen window, wooden floor, subtle wall decorations. "
-            "Empty room, no people. Aspect ratio 16:9."
+            "Reproduce the reference bedroom scene EXACTLY, preserving: same camera angle (front flat view), "
+            "same room layout, same bed position and shape, same headboard, same nightstand and lamp, "
+            "same wall art, same floor, same wall color, same lighting, same pixel-art rendering style. "
+            "The ONLY difference: the two plushies that were sitting on the pillows must be REMOVED. "
+            "The pillows should be bare, neatly plumped, nothing on top. "
+            "Everything else IDENTICAL to the reference. No people. No text. "
+            "Match the pixel-art precision of the reference image exactly."
         ),
         out_path=ASSETS / "bg_bedroom_empty.png",
-        refs=[ASSETS / "bg_bedroom.png"],  # 保证风格一致
+        refs=[ASSETS / "bg_bedroom.png"],
     )
 
 TARGETS = {
