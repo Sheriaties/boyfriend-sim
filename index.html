@@ -1210,8 +1210,13 @@
   .mall-bg {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, #e6c8a0 0%, #d4a678 40%, #b8895b 100%);
-    /* 用 img 替换后，这里放 background-image: url('assets/bg_mall.png') */
+    background: linear-gradient(180deg, #e6c8a0 0%, #d4a678 40%, #b8895b 100%)
+                url('assets/bg_mall.png') center/cover no-repeat;
+    background-image: url('assets/bg_mall.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: #d4bfa6;
   }
   /* 商店 sprite（容器） */
   .mall-shop {
@@ -3106,9 +3111,19 @@ function playMallMinigame() {
                     && cursorY > 30 && cursorY < 85;
       cursorEl.classList.toggle('on-target', onPlushie);
 
-      // 关键判定时刻：两人模型走到玩偶摊 x 位置时，锁定成功/失败
+      // 关键判定：两人模型走到玩偶摊 x 位置时立刻判决
+      // - 判定圈在玩偶摊 → 成功，立即停止动画
+      // - 判定圈不在 → 记为失败标志，继续走到猪排店（走完再触发失败演出）
       if (successFlag === null && coupleXPct <= PLUSHIE_X_PCT) {
-        successFlag = onPlushie;
+        if (onPlushie) {
+          // 成功：中止动画，立刻返回
+          successFlag = true;
+          done = true;
+          cleanup();
+          resolve(true);
+          return;
+        }
+        successFlag = false;
       }
 
       if (t >= 1) {
