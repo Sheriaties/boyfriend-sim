@@ -60,13 +60,17 @@ def gen(prompt: str, out_path: pathlib.Path, refs: list[pathlib.Path] = None):
 def gen_bg_mall():
     gen(
         prompt=(
-            "A wide horizontal Japanese-style shopping mall interior background, "
-            "cozy warm lighting, wooden floor with subtle tile pattern, "
-            "tall arched windows in the background, hanging lanterns and warm ambient signage, "
+            "A wide horizontal MODERN shopping mall interior background — "
+            "clean bright atrium with WHITE POLISHED MARBLE FLOOR (glossy, reflective), "
+            "high glass ceiling with soft daylight streaming down, "
+            "sleek modern storefronts on both sides with large glass windows, "
+            "subtle brand-neutral shop signage, glass railings and escalator hints in background, "
+            "warm cool-toned lighting, potted decorative plants along the walkway, "
             "empty middle ground so shops can be placed on top later, "
-            "pixel-art style similar to Stardew Valley — soft palette, "
-            "high detail but not photoreal, 16:9 wide banner, no people, "
-            "flat front view, clean composition. "
+            "pixel-art style similar to Stardew Valley precision but with a MODERN CONTEMPORARY urban look — "
+            "NOT japanese, NOT retro, NOT wooden. "
+            "Soft palette dominated by whites, light greys, glass reflections, warm accent lights. "
+            "16:9 or wider banner, no people, flat front view, clean composition. "
             "Aspect ratio 21:9 recommended if possible."
         ),
         out_path=ASSETS / "bg_mall.png",
