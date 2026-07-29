@@ -3184,13 +3184,11 @@ function d3MallFailPrompt() {
   return new Promise(async resolve => {
     cgShow('');
     document.getElementById('cg-image').style.opacity = '0';
-    await cgSay('旁白', '一阵油炸的香气钻进鼻子里。抬头一看，是家不大的炸猪排店。');
-    await cgSay('@bf', '……闻着好香啊。要不先坐下来吃点东西？');
-    await cgSay('旁白', '你们挑了靠窗的位置，点了两份猪排饭。');
-    await cgSay('旁白', '他把一块最脆的边角先夹到了你碗里，自己才动筷。');
-    await cgSay('@bf', '（吃到一半，他抬头看你。）');
-    await cgSay('@bf', '……肚子还有地方吗？要不再往前走一走？');
-    const pick = await cgChoose(['再陪他逛一会儿', '算了，回家吧'], 0);
+    await cgSay('旁白', '你们走到了炸猪排店门口。');
+    await cgSay('@bf', '闻起来好香啊……先吃这个吧？');
+    await cgSay('旁白', '你们点了两份猪排。他吃得很开心。');
+    await cgSay('@bf', '还要不要再逛逛？');
+    const pick = await cgChoose(['再逛一会儿', '回家吧'], 0);
     document.getElementById('cg-image').style.opacity = '1';
     cgHide();
     resolve(pick === 0 ? 'continue' : 'home');
