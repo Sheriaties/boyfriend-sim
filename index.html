@@ -1643,7 +1643,7 @@
     <!-- 玩家用鼠标控制的判定圈：会被强制左飘 -->
     <div class="mall-cursor" id="mall-cursor"></div>
     <!-- 顶部提示条 -->
-    <div class="mall-hint" id="mall-hint">🖱 拖动鼠标向右，抵抗惯性去看看那个摊子</div>
+    <div class="mall-hint" id="mall-hint">🖱 有什么东西在余光里……用手把它拉回来看看</div>
   </div>
   <!-- ============ D3 商场事件结束覆盖屏（失败对白） ============ -->
 
@@ -2980,9 +2980,10 @@ async function triggerD3MallEvent() {
   // 引入：黑屏 + 男主邀请 + 逛得开心
   cgShow('');                                   // 空 src = 纯黑屏，只放对白
   document.getElementById('cg-image').style.opacity = '0';
-  await cgSay('@bf', '亲爱的，要不要出去逛逛？');
-  await cgSay('旁白', '你换好衣服，牵着他的手一起出了门。');
-  await cgSay('旁白', '两个人在商场里逛得很开心。累了想找个地方歇一歇。');
+  await cgSay('@bf', '……在家待一天啦。要不要出门走走？陪我。');
+  await cgSay('旁白', '你换好衣服，他在门口把你的外套拉链拉到最上面，替你挡了挡风。');
+  await cgSay('旁白', '商场里人来人往，暖黄色的灯光把每张脸都照得柔软。');
+  await cgSay('旁白', '你们逛得漫无目的，只是随着人流慢慢往前走。');
   cgHide();
   document.getElementById('cg-image').style.opacity = '1';
 
@@ -3005,8 +3006,12 @@ async function triggerD3MallEvent() {
       saveState();
       cgShow('');
       document.getElementById('cg-image').style.opacity = '0';
-      await cgSay('旁白', '你们吃完猪排，慢慢走回了家。');
-      await cgSay('旁白', '路上他一直很温柔，只是那两只玩偶……你没再提起。');
+      await cgSay('旁白', '你们并肩走出商场，天色已经有点晚了。');
+      await cgSay('旁白', '他小心翼翼地牵着你的手，路灯把你们的影子拉得很长。');
+      await cgSay('@bf', '……下次再来？');
+      await cgSay('旁白', '你点了点头。');
+      await cgSay('旁白', '路过一家门店的时候，你回头看了一眼——');
+      await cgSay('旁白', '（好像有什么东西……刚刚被你错过了。）');
       document.getElementById('cg-image').style.opacity = '1';
       cgHide();
       return;
@@ -3028,11 +3033,11 @@ function playMallMinigame() {
 
     // 参数
     const overlayRect = () => overlay.getBoundingClientRect();
-    const DURATION_MS = 7000;                    // 两人走完全程时长
+    const DURATION_MS = 8000;                    // 两人走完全程时长（略延长，让玩家更从容）
     const START_X_PCT = 92;                      // 两人起点（右侧）
     const END_X_PCT   = 6;                       // 两人终点（左侧）—— 猪排店位置
     const PLUSHIE_X_PCT = 45;                    // 玩偶摊 x 中心
-    const CURSOR_DRIFT_PX_PER_FRAME = 1.8;       // 判定圈每帧被推向左的像素数（约 30fps => 60px/s）
+    const CURSOR_DRIFT_PX_PER_FRAME = 1.0;       // 判定圈每帧被推向左的像素数（更慢的惯性）
     const CURSOR_SIZE_PCT = 5;                   // 判定圈半径（vw ≈ %）
     const PLUSHIE_HITBOX_PCT = 12;               // 玩偶摊命中框半宽（%）
 
@@ -3134,12 +3139,17 @@ function playMallMinigame() {
 async function d3MallSuccessOutcome() {
   cgShow('');
   document.getElementById('cg-image').style.opacity = '0';
-  await cgSay('旁白', '在一个小摊前，你停下了脚步。');
-  await cgSay('旁白', '摊子上摆着两只可爱的玩偶。');
-  await cgSay('旁白', '一只兔子，一只企鹅。');
-  await cgSay('旁白', '……咦，它们的名字牌上写着——「卢米·紫水晶」「大奥利」。');
-  await cgSay('@bf', '这……也算是我们共同抚养的两个孩子了吧。');
-  await cgSay('@bf', '请多关照，孩子他妈。');
+  await cgSay('旁白', '你在一个不起眼的小摊前停了下来。');
+  await cgSay('旁白', '摊子上摆着两只手工玩偶——一只毛茸茸的兔子，一只圆滚滚的企鹅。');
+  await cgSay('旁白', '兔子有一对垂下来的长耳朵，眼睛是紫水晶的颜色。');
+  await cgSay('旁白', '企鹅的肚子鼓鼓的，看起来有点憨。');
+  await cgSay('旁白', '你伸手拿起兔子看了看，摊主指着底下的小名牌笑了笑：');
+  await cgSay('摊主', '「这只叫卢米·紫水晶。旁边那只叫大奥利。都是我们家养的。」');
+  await cgSay('旁白', '你还没反应过来，他已经在你身后弯下腰把两只都抱了起来。');
+  await cgSay('@bf', '……那就一起接回家吧。');
+  await cgSay('@bf', '（他把玩偶递到你怀里，声音轻得像是怕吵到它们。）');
+  await cgSay('@bf', '以后，就算我们共同抚养的两个孩子了。');
+  await cgSay('@bf', '请多关照——孩子他妈。');
   document.getElementById('cg-image').style.opacity = '1';
 
   // 播 PV（如果有 cg_mall_pv.png 就用，没有先用 cg_walk_hold 顶一下）
@@ -3152,7 +3162,9 @@ async function d3MallSuccessOutcome() {
     cgImg.onerror = () => { if (!done) { done = true; cgImg.src = 'assets/cg_walk_hold.png'; res(); } };
     setTimeout(() => { if (!done) { done = true; res(); } }, 800);
   });
-  await cgSay('旁白', '（我们家里……又多出两个新成员了。）');
+  await cgSay('旁白', '回到家，你把它们并排放在床头，让它们靠在一起。');
+  await cgSay('旁白', '阳光斜斜地照进来，落在它们身上。');
+  await cgSay('旁白', '（我们家里……好像又多出了两个新成员。）');
 
   // 数值 + 世界状态永久改变
   state.plushiesOwned = true;
@@ -3172,11 +3184,13 @@ function d3MallFailPrompt() {
   return new Promise(async resolve => {
     cgShow('');
     document.getElementById('cg-image').style.opacity = '0';
-    await cgSay('旁白', '你们走到了炸猪排店门口。');
-    await cgSay('@bf', '闻起来好香啊……先吃这个吧？');
-    await cgSay('旁白', '你们点了两份猪排。他吃得很开心。');
-    await cgSay('@bf', '还要不要再逛逛？');
-    const pick = await cgChoose(['再逛一会儿', '回家吧'], 0);
+    await cgSay('旁白', '一阵油炸的香气钻进鼻子里。抬头一看，是家不大的炸猪排店。');
+    await cgSay('@bf', '……闻着好香啊。要不先坐下来吃点东西？');
+    await cgSay('旁白', '你们挑了靠窗的位置，点了两份猪排饭。');
+    await cgSay('旁白', '他把一块最脆的边角先夹到了你碗里，自己才动筷。');
+    await cgSay('@bf', '（吃到一半，他抬头看你。）');
+    await cgSay('@bf', '……肚子还有地方吗？要不再往前走一走？');
+    const pick = await cgChoose(['再陪他逛一会儿', '算了，回家吧'], 0);
     document.getElementById('cg-image').style.opacity = '1';
     cgHide();
     resolve(pick === 0 ? 'continue' : 'home');
