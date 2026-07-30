@@ -1211,8 +1211,8 @@
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg, #e6c8a0 0%, #d4a678 40%, #b8895b 100%)
-                url('assets/bg_mall.png') center/cover no-repeat;
-    background-image: url('assets/bg_mall.png');
+                url('assets/bg_mall_v2.png') center/cover no-repeat;
+    background-image: url('assets/bg_mall_v2.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -1221,9 +1221,10 @@
   /* 商店 sprite（容器） */
   .mall-shop {
     position: absolute;
-    bottom: 22%;
-    height: 46%;
-    width: 16%;
+    left: var(--shop-left);
+    bottom: var(--shop-bottom, 22%);
+    width: var(--shop-width, 16%);
+    height: var(--shop-height, 46%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1247,16 +1248,21 @@
   }
   .mall-shop-icon  { font-size: 2.8vw; line-height: 1.2; }
   .mall-shop-label { font-size: 1vw; margin-top: 0.4vw; letter-spacing: 0.1em; }
-  /* 玩偶摊：在场景 x=42% 位置（先出现） */
+  /* 调整店铺贴图只改这里：判定会自动读取实际位置和大小 */
   .mall-shop-plushie {
-    left: 38%;
+    --shop-left: 28%;
+    --shop-bottom: 19%;
+    --shop-width: 50%;
+    --shop-height: 46%;
   }
   .mall-shop-plushie .mall-shop-placeholder {
     background: linear-gradient(135deg, #ff9ec2 0%, #ffbcd4 100%);
   }
-  /* 猪排店：在场景 x=6% 位置（后出现，在左边） */
   .mall-shop-katsu {
-    left: 4%;
+    --shop-left: 4%;
+    --shop-bottom: 21%;
+    --shop-width: 25%;
+    --shop-height: 46%;
   }
   .mall-shop-katsu .mall-shop-placeholder {
     background: linear-gradient(135deg, #c88a4c 0%, #d4a276 100%);
@@ -2979,11 +2985,28 @@ function isInCG() {
 // 玩家要拖动鼠标（抗力）让判定圈盖住玩偶摊，且两人模型走到玩偶摊时判定圈仍在 → 成功。
 // 成功：黑屏对白 + PV + 女主心声 + +10 love/understanding + plushiesOwned=true
 // 失败：走到猪排店 → 男主问回家/继续 → 回家=永久失败 / 继续=完全重来
+let d3MallBgmAudio = null;
+function d3MallBgmPlay() {
+  if (!d3MallBgmAudio) {
+    d3MallBgmAudio = new Audio('assets/d3_mall_bgm.mp3');
+    d3MallBgmAudio.loop = true;
+    d3MallBgmAudio.volume = 0.28;
+  }
+  d3MallBgmAudio.currentTime = 0;
+  d3MallBgmAudio.play().catch(() => {});
+}
+function d3MallBgmStop() {
+  if (!d3MallBgmAudio) return;
+  d3MallBgmAudio.pause();
+  d3MallBgmAudio.currentTime = 0;
+}
+
 async function triggerD3MallEvent() {
   // 引入：黑屏 + 男主邀请 + 逛得开心
   cgShow('');                                   // 空 src = 纯黑屏，只放对白
   document.getElementById('cg-image').style.opacity = '0';
-  await cgSay('@bf', '……在家待一天啦。要不要出门走走？陪我。');
+  await cgSay('@bf', '在家待一天啦。要不要出门走走？');
+  d3MallBgmPlay();
   await cgSay('旁白', '你换好衣服，他在门口把你的外套拉链拉到最上面，替你挡了挡风。');
   await cgSay('旁白', '商场里人来人往，暖黄色的灯光把每张脸都照得柔软。');
   await cgSay('旁白', '你们逛得漫无目的，只是随着人流慢慢往前走。');
@@ -2994,6 +3017,7 @@ async function triggerD3MallEvent() {
   while (true) {
     const success = await playMallMinigame();
     if (success) {
+      d3MallBgmStop();
       await d3MallSuccessOutcome();
       state.d3Done = true;
       saveState();
@@ -3002,6 +3026,7 @@ async function triggerD3MallEvent() {
     // 失败：走到猪排店 → 男主问回家/继续
     const choice = await d3MallFailPrompt();
     if (choice === 'home') {
+      d3MallBgmStop();
       // 永久失败：卧室永远空床
       state.d3Done = true;
       state.d3PermanentFail = true;
@@ -3010,9 +3035,9 @@ async function triggerD3MallEvent() {
       cgShow('');
       document.getElementById('cg-image').style.opacity = '0';
       await cgSay('旁白', '你们并肩走出商场，天色已经有点晚了。');
-      await cgSay('旁白', '他小心翼翼地牵着你的手，路灯把你们的影子拉得很长。');
-      await cgSay('@bf', '……下次再来？');
-      await cgSay('旁白', '你点了点头。');
+      await cgSay('@bf', '不愧是吉屋出猪，逛累了吃点炸的东西太爽了');
+      await cgSay('你', '下次再一起来吧');
+      await cgSay('旁白', '他点了点头。');
       await cgSay('旁白', '路过一家门店的时候，你回头看了一眼——');
       await cgSay('旁白', '（好像有什么东西……刚刚被你错过了。）');
       document.getElementById('cg-image').style.opacity = '1';
@@ -3032,27 +3057,47 @@ function playMallMinigame() {
     const cursorEl = document.getElementById('mall-cursor');
     const coupleEl = document.getElementById('mall-couple');
     const plushieEl = document.getElementById('mall-shop-plushie');
+    const katsuEl = document.getElementById('mall-shop-katsu');
     overlay.classList.add('show');
 
     // 参数
     const overlayRect = () => overlay.getBoundingClientRect();
+    const elementBoundsPct = (el) => {
+      const root = overlayRect();
+      const rect = el.getBoundingClientRect();
+      const left = (rect.left - root.left) / root.width * 100;
+      const right = (rect.right - root.left) / root.width * 100;
+      const top = (rect.top - root.top) / root.height * 100;
+      const bottom = (rect.bottom - root.top) / root.height * 100;
+      return {
+        left,
+        right,
+        top,
+        bottom,
+        centerX: (left + right) / 2,
+        centerY: (top + bottom) / 2,
+      };
+    };
+    const plushieBounds = elementBoundsPct(plushieEl);
+    const katsuBounds = elementBoundsPct(katsuEl);
     const DURATION_MS = 8000;                    // 两人走完全程时长（略延长，让玩家更从容）
     const START_X_PCT = 92;                      // 两人起点（右侧）
-    const END_X_PCT   = 6;                       // 两人终点（左侧）—— 猪排店位置
-    const PLUSHIE_X_PCT = 45;                    // 玩偶摊 x 中心
-    const CURSOR_DRIFT_PX_PER_FRAME = 1.0;       // 判定圈每帧被推向左的像素数（更慢的惯性）
-    const CURSOR_SIZE_PCT = 5;                   // 判定圈半径（vw ≈ %）
-    const PLUSHIE_HITBOX_PCT = 12;               // 玩偶摊命中框半宽（%）
+    const END_X_PCT = katsuBounds.centerX;       // 两人终点跟随猪排店实际位置
+    const PLUSHIE_X_PCT = plushieBounds.centerX; // 玩偶摊判定点跟随贴图实际位置
+    const CURSOR_DRIFT_PX_PER_FRAME = 3.6;       // 左漂速度高于人物移动速度，玩家需要持续向右拉回
+    const SHOP_HITBOX_PADDING_PCT = 1.5;         // 判定框在店铺边缘外额外放宽一点
 
     // 判定圈位置（相对 overlay，用 %）
     let cursorX = START_X_PCT;
     let cursorY = 55;                            // 固定在下方偏中，跟人物一致
     let mouseControlled = false;                 // 玩家是否有鼠标输入
     let lastMouseMoveAt = 0;
+    let failureLocked = false;                   // 碰到猪排店后立即锁定失败
 
     // 鼠标输入：把鼠标位置转 %，作为"玩家想去的位置"
     let targetX = cursorX, targetY = cursorY;
     const onMouseMove = (e) => {
+      if (failureLocked) return;
       const r = overlayRect();
       targetX = (e.clientX - r.left) / r.width  * 100;
       targetY = (e.clientY - r.top)  / r.height * 100;
@@ -3062,6 +3107,7 @@ function playMallMinigame() {
     overlay.addEventListener('mousemove', onMouseMove);
     // 触屏支持
     const onTouchMove = (e) => {
+      if (failureLocked) return;
       if (!e.touches || !e.touches[0]) return;
       const r = overlayRect();
       targetX = (e.touches[0].clientX - r.left) / r.width  * 100;
@@ -3088,26 +3134,43 @@ function playMallMinigame() {
       coupleXPct = START_X_PCT + (END_X_PCT - START_X_PCT) * t;
       coupleEl.style.left = coupleXPct + '%';
 
-      // 判定圈：先被"惯性"推向左（模拟顺着走的方向），若玩家有鼠标输入，向鼠标目标靠拢
-      // 惯性效果 = 每帧减少 X（往左）
-      const overlayW = overlayRect().width;
-      const driftPct = (CURSOR_DRIFT_PX_PER_FRAME / overlayW) * 100;
-      cursorX -= driftPct;
-      if (mouseControlled && (now - lastMouseMoveAt) < 400) {
-        // 玩家最近有输入 → 向鼠标目标以 0.35 的插值靠拢（这样有拖动感、但要持续用力）
-        cursorX += (targetX - cursorX) * 0.35;
-        cursorY += (targetY - cursorY) * 0.35;
-      }
-      // 限制范围
-      cursorX = Math.max(0, Math.min(100, cursorX));
-      cursorY = Math.max(5, Math.min(95, cursorY));
-      cursorEl.style.left = cursorX + '%';
-      cursorEl.style.top  = cursorY + '%';
+      let onPlushie = false;
+      if (!failureLocked) {
+        // 玩家向鼠标位置拉回，但左向拉力每帧都会在输入之后完整施加
+        const root = overlayRect();
+        const driftPct = (CURSOR_DRIFT_PX_PER_FRAME / root.width) * 100;
+        if (mouseControlled && (now - lastMouseMoveAt) < 400) {
+          cursorX += (targetX - cursorX) * 0.35;
+          cursorY += (targetY - cursorY) * 0.35;
+        }
+        cursorX -= driftPct;
+        cursorX = Math.max(0, Math.min(100, cursorX));
+        cursorY = Math.max(5, Math.min(95, cursorY));
+        cursorEl.style.left = cursorX + '%';
+        cursorEl.style.top  = cursorY + '%';
 
-      // 判定圈是否在玩偶摊热区内
-      const onPlushie = Math.abs(cursorX - PLUSHIE_X_PCT) < PLUSHIE_HITBOX_PCT
-                    && cursorY > 30 && cursorY < 85;
-      cursorEl.classList.toggle('on-target', onPlushie);
+        // 玩偶摊判定仍使用店铺容器的位置和大小
+        onPlushie = cursorX >= plushieBounds.left - SHOP_HITBOX_PADDING_PCT
+                 && cursorX <= plushieBounds.right + SHOP_HITBOX_PADDING_PCT
+                 && cursorY >= plushieBounds.top - SHOP_HITBOX_PADDING_PCT
+                 && cursorY <= plushieBounds.bottom + SHOP_HITBOX_PADDING_PCT;
+        cursorEl.classList.toggle('on-target', onPlushie);
+
+        // 判定圈外缘一碰到猪排店，就消失并永久锁定本轮失败
+        const cursorRect = cursorEl.getBoundingClientRect();
+        const cursorRadiusXPct = cursorRect.width / root.width * 50;
+        const cursorRadiusYPct = cursorRect.height / root.height * 50;
+        const touchesKatsu = cursorX + cursorRadiusXPct >= katsuBounds.left
+                          && cursorX - cursorRadiusXPct <= katsuBounds.right
+                          && cursorY + cursorRadiusYPct >= katsuBounds.top
+                          && cursorY - cursorRadiusYPct <= katsuBounds.bottom;
+        if (touchesKatsu) {
+          failureLocked = true;
+          successFlag = false;
+          cursorEl.classList.remove('on-target');
+          cursorEl.style.display = 'none';
+        }
+      }
 
       // 关键判定：两人模型走到玩偶摊 x 位置时立刻判决
       // - 判定圈在玩偶摊 → 成功，立即停止动画
@@ -3144,6 +3207,7 @@ function playMallMinigame() {
     coupleEl.style.left = START_X_PCT + '%';
     cursorEl.style.left = START_X_PCT + '%';
     cursorEl.style.top  = '55%';
+    cursorEl.style.display = '';
     requestAnimationFrame(frame);
   });
 }
@@ -3155,14 +3219,15 @@ async function d3MallSuccessOutcome() {
   await cgSay('旁白', '你在一个不起眼的小摊前停了下来。');
   await cgSay('旁白', '摊子上摆着两只手工玩偶——一只毛茸茸的兔子，一只圆滚滚的企鹅。');
   await cgSay('旁白', '兔子有一对垂下来的长耳朵，眼睛是紫水晶的颜色。');
-  await cgSay('旁白', '企鹅的肚子鼓鼓的，看起来有点憨。');
+  await cgSay('旁白', '企鹅的肚子鼓鼓的，站起来显得很得意。');
   await cgSay('旁白', '你伸手拿起兔子看了看，摊主指着底下的小名牌笑了笑：');
   await cgSay('摊主', '「这只叫卢米·紫水晶。旁边那只叫大奥利。都是我们家养的。」');
-  await cgSay('旁白', '你还没反应过来，他已经在你身后弯下腰把两只都抱了起来。');
-  await cgSay('@bf', '……那就一起接回家吧。');
-  await cgSay('@bf', '（他把玩偶递到你怀里，声音轻得像是怕吵到它们。）');
-  await cgSay('@bf', '以后，就算我们共同抚养的两个孩子了。');
-  await cgSay('@bf', '请多关照——孩子他妈。');
+  await cgSay('旁白', '你把两只玩偶举起来和他一起看了看');
+  await cgSay('你', '这两只小家伙好可爱呀，我们带一只回家吧…带哪只呢？');
+  await cgSay('@bf', '老婆这么纠结，那就把他们一起接回家吧。');
+  await cgSay('@bf', '（他把玩偶递到你怀里，笑得憨憨的。）');
+  await cgSay('@bf', '这就算是我们共同抚养的前两个小生命啦');
+  await cgSay('@bf', '请多关照咯—————孩子他妈。');
   document.getElementById('cg-image').style.opacity = '1';
 
   // 播 PV（如果有 cg_mall_pv.png 就用，没有先用 cg_walk_hold 顶一下）
@@ -3177,7 +3242,8 @@ async function d3MallSuccessOutcome() {
   });
   await cgSay('旁白', '回到家，你把它们并排放在床头，让它们靠在一起。');
   await cgSay('旁白', '阳光斜斜地照进来，落在它们身上。');
-  await cgSay('旁白', '（我们家里……好像又多出了两个新成员。）');
+  await cgSay('旁白', '你有种之后会跟他天天在家里对着玩偶叫爸爸妈妈的预感');
+  await cgSay('旁白', '也挺好的');
 
   // 数值 + 世界状态永久改变
   state.plushiesOwned = true;

@@ -112,7 +112,7 @@
 **流程**：
 1. D3 白天首次 `advanceTime` 自动触发（`checkStoryBeats` 检查）
 2. 黑屏对白：男主邀请 + 两句"逛得很开心"旁白
-3. 小游戏：两人像素模型自动从右向左平移 7 秒，玩家的判定圈被强制左飘，玩家要抗力拖住停在玩偶摊上
+3. 轻松商场 BGM 开始循环；小游戏中两人模型自动从右向左平移，玩家的判定圈被强制左飘，玩家要抗力拖住停在玩偶摊上
 4. 关键判定：两人模型走到玩偶摊 x 位置时，判定圈是否仍在玩偶摊热区内
 5. **✅ 成功**：黑屏对白 → PV（`cg_mall_pv.png`，兜底 `cg_walk_hold.png`） → 女主心声 → love+10 understanding+10 → `plushiesOwned=true` + `clues.mall_plushie=discovered` → 卧室出现玩偶
 6. **❌ 失败**：走到猪排店 → 男主"还要再逛逛吗？" → 选"回家"永久失败（`d3PermanentFail=true`，卧室永远空床） / 选"再逛"完全重播
@@ -153,6 +153,7 @@ python3 scripts/gen_d3_mall_assets.py cg_mall_pv
 | `assets/sprite_katsu_shop.png` | 炸猪排店 sprite（占位：CSS 生成的木色矩形+🍱文字） |
 | `assets/cg_mall_pv.png` | 成功 PV（占位：`cg_walk_hold.png` 兜底） |
 | `assets/bg_bedroom_empty.png` | 卧室白天空床版（占位：`bg_bedroom.png` 兜底，但卧室会一直有玩偶） |
+| `assets/d3_mall_bgm.mp3` | D3 商场轻松循环 BGM（Happy Clappy Loop，CC0） |
 
 **注意**：素材生成完之前，D3 事件也能完整跑通，只是视觉是占位的。
 

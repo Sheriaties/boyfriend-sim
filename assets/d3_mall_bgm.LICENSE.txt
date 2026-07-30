@@ -1,0 +1,9 @@
+Happy Clappy Loop
+
+Author: OwlishMedia
+Source: https://opengameart.org/content/happy-clappy-loop
+Original file: HappyClappyLoop.wav
+License: CC0 1.0 Universal (Public Domain)
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+The original WAV was converted to MP3 for use as the looping D3 mall BGM.
